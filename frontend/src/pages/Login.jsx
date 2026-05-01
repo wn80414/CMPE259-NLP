@@ -1,11 +1,5 @@
 import { useState } from "react";
 import { Box, TextField, Button, Typography, Tab, Tabs } from "@mui/material";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 export default function AuthPage() {
   const [tab, setTab] = useState(0);
@@ -25,43 +19,64 @@ export default function AuthPage() {
   const handleLogin = async () => {
     setLoading(true);
     setError("");
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
-    });
-    setLoading(false);
-    if (loginError) {
-      setError(loginError.message);
-    } else {
-      // Session is automatically stored by Supabase - just redirect
+    try {
+      const response = await fetch("http://127.0.0.1:8000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.detail || "Login failed");
+        setLoading(false);
+        return;
+      }
+      
+      const data = await response.json();
+      localStorage.setItem("token", data.session.access_token);
+      localStorage.setItem("userId", data.user.id);
       window.location.href = "/";
+    } catch (err) {
+      setError("Network error: " + err.message);
+      setLoading(false);
     }
   };
 
   const handleSignup = async () => {
     setLoading(true);
     setError("");
-    const { data, error: signupError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        data: {
-          name: form.name,
-        },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    setLoading(false);
-    if (signupError) {
-      setError(signupError.message);
-    } else {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          name: form.name
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.detail || "Signup failed");
+        setLoading(false);
+        return;
+      }
+      
       setError("✓ Signup successful! You can now login.");
       setTimeout(() => {
         setTab(0);
         setForm({ email: "", password: "", name: "" });
         setError("");
       }, 2000);
+    } catch (err) {
+      setError("Network error: " + err.message);
     }
+    setLoading(false);
   };
 
   return (

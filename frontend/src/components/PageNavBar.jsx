@@ -1,15 +1,10 @@
 import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 export default function PageNavBar({ chatOpen, setChatOpen }) {
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
     window.location.href = "/login";
   };
 
@@ -20,9 +15,8 @@ export default function PageNavBar({ chatOpen, setChatOpen }) {
     const formData = new FormData();
     formData.append("file", file);
 
-    // Get current session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const token = localStorage.getItem("token");
+    if (!token) {
       alert("Please login first");
       return;
     }
@@ -31,7 +25,7 @@ export default function PageNavBar({ chatOpen, setChatOpen }) {
       const res = await fetch("http://127.0.0.1:8000/upload/", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${session.access_token}`,
+          "Authorization": `Bearer ${token}`,
         },
         body: formData,
       });

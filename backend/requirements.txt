@@ -1,6 +1,15 @@
 fastapi
 uvicorn[standard]
+
 python-multipart
-pymupdf
+python-dotenv
+
+httpx
+
+python-jose[cryptography]
+passlib[bcrypt]
+
 pydantic
+
+pypdf
 supabase

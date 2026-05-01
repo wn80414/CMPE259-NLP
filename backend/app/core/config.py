@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = ["*"]
     supabase_url: str
     supabase_key: str
+    hf_token: str
 
     class Config:
         env_file = ".env"

@@ -13,6 +13,7 @@ export default function App() {
   const [chatOpen, setChatOpen] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editor, setEditor] = useState(null);
 
   useEffect(() => {
     // Check if token exists in localStorage
@@ -42,12 +43,13 @@ export default function App() {
               <PageNavBar
                 chatOpen={chatOpen}
                 setChatOpen={setChatOpen}
+                editor={editor}
               />
 
               <Box sx={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
                 <Box sx={{ flex: 1 }}>
-                  <ResumeEditor />
+                  <ResumeEditor onEditorReady={setEditor} />
                 </Box>
 
                 {chatOpen && (

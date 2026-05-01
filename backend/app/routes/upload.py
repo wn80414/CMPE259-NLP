@@ -3,7 +3,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Header
 from supabase import create_client
 from app.core.config import settings
 from app.services.pdf_parser import extract_text_from_pdf
-from app.services.llama_parser import analyze_resume
+from app.services.llama_parser import parse_resume
 
 router = APIRouter()
 
@@ -39,7 +39,7 @@ async def upload_resume(
     raw_text = extract_text_from_pdf(file_bytes)
 
     # 3. LLM analysis (service)
-    analysis = analyze_resume(raw_text)
+    analysis = parse_resume(raw_text)
 
     # 4. Save to Supabase
     payload = {

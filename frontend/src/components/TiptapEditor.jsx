@@ -3,9 +3,10 @@ import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import { Box } from "@mui/material";
 import { useEffect } from "react";
-import EditorNavBar from "./EditorNavbar";
+import EditorNavBar from "./EditorNavBar";
+import { resumeToHTML } from "../utils/resumeToHTML";
 
-export default function TipTapEditor() {
+export default function TipTapEditor({ resume, onEditorReady }) {
 
   const editor = useEditor({
     extensions: [
@@ -15,57 +16,53 @@ export default function TipTapEditor() {
         defaultAlignment: "left",
       }),
     ],
-    content: `
-      <h2>Resume</h2>
-      <p>Start editing...</p>
-    `,
+    content: "<h2>Resume Editor</h2><p>Upload a resume to begin</p>",
   });
 
-  //  Listen for PDF upload → inject into editor
+  // expose editor
   useEffect(() => {
-    const handleResumeLoad = (e) => {
-      const text = e.detail;
-      if (!editor || !text) return;
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
 
-      // Replace entire content cleanly
-      editor.commands.setContent(`
-        <h2>Imported Resume</h2>
-        <p>${text.replace(/\n/g, "<br/>")}</p>
-      `);
-    };
+  // set content safely
+  useEffect(() => {
+    if (!editor || !resume) return;
 
-    window.addEventListener("resume-loaded", handleResumeLoad);
-
-    return () => {
-      window.removeEventListener("resume-loaded", handleResumeLoad);
-    };
-  }, [editor]);
+    const html = resumeToHTML(resume);
+    editor.commands.setContent(html);
+  }, [resume, editor]);
 
   if (!editor) return null;
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-      }}
-    >
-      {/* Toolbar */}
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <EditorNavBar editor={editor} />
 
-      {/* Editor Body */}
+      {/* Editor wrapper */}
       <Box
         sx={{
           flex: 1,
-          overflow: "auto",
-          p: 2,
+          minHeight: 0,          // important for proper flexbox scrolling
+          overflow: "hidden",
           backgroundColor: "#fff",
           color: "#000",
         }}
       >
         <EditorContent editor={editor} />
       </Box>
+
+      {/* Global CSS fix for TipTap scroll */}
+      <style>{`
+        .ProseMirror {
+          height: 100%;
+          max-height: 100%;
+          overflow-y: auto;
+          padding: 16px;
+          outline: none;
+        }
+      `}</style>
     </Box>
   );
 }

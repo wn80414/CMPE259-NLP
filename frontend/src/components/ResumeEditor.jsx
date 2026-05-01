@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import TipTapEditor from "./TipTapEditor";
 import AIChat from "./AIChat";
 
-export default function ResumeEditor({ chatOpen }) {
+export default function ResumeEditor({ chatOpen, onEditorReady }) {
   return (
     <Box
       sx={{
@@ -10,10 +10,11 @@ export default function ResumeEditor({ chatOpen }) {
         display: "flex",
         flexDirection: "row",
         overflow: "hidden",
+        height: "100%", // 🔥 important
       }}
     >
 
-      {/* LEFT CHAT (conditional) */}
+      {/* LEFT CHAT */}
       {chatOpen && (
         <Box
           sx={{
@@ -21,15 +22,23 @@ export default function ResumeEditor({ chatOpen }) {
             borderRight: "1px solid #ddd",
             display: "flex",
             flexDirection: "column",
+            height: "100%",
           }}
         >
           <AIChat />
         </Box>
       )}
 
-      {/* MAIN EDITOR ALWAYS FULL WIDTH WHEN CLOSED */}
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <TipTapEditor />
+      {/* MAIN EDITOR */}
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        <TipTapEditor onEditorReady={onEditorReady} />
       </Box>
 
     </Box>

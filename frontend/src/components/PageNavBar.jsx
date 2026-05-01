@@ -1,6 +1,17 @@
-import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
+import { useState } from "react";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  CircularProgress
+} from "@mui/material";
 
-export default function PageNavBar({ chatOpen, setChatOpen }) {
+import { parseResumeSafe, resumeToHTML } from "../utils/ResumeFormatter";
+
+export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
+  const [uploading, setUploading] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -12,35 +23,50 @@ export default function PageNavBar({ chatOpen, setChatOpen }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     const token = localStorage.getItem("token");
     if (!token) {
       alert("Please login first");
       return;
     }
 
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+
     try {
       const res = await fetch("http://127.0.0.1:8000/upload/", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });
 
       const data = await res.json();
 
-      if (res.ok) {
-        alert("Resume uploaded successfully!");
-      } else {
+      if (!res.ok) {
         alert(data.detail || "Upload failed");
+        return;
+      }
+
+      console.log("LLM Resume JSON:", data);
+
+      const formatted = parseResumeSafe(data.analysis);
+      console.log(formatted);
+      const html = resumeToHTML(formatted);
+      console.log(html);
+
+      if (editor) {
+        console.log("Setting editor content...");
+        editor.commands.setContent(html);
       }
 
     } catch (err) {
       console.error("Upload failed:", err);
       alert("Upload failed");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -63,17 +89,26 @@ export default function PageNavBar({ chatOpen, setChatOpen }) {
             {chatOpen ? "Hide Chat" : "Show Chat"}
           </Button>
 
-          {/* Upload JSON */}
+          {/* Upload */}
           <Button
             color="inherit"
             variant="contained"
             component="label"
+            disabled={uploading}
           >
-            Upload JSON
+            {uploading ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <CircularProgress size={16} color="inherit" />
+                Uploading
+              </Box>
+            ) : (
+              "Upload PDF"
+            )}
+
             <input
               hidden
               type="file"
-              accept="application/json"
+              accept="application/pdf"
               onChange={handleUpload}
             />
           </Button>

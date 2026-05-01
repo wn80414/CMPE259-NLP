@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import upload, auth
+from app.routes import upload, auth, chat
 
 app = FastAPI(title="AI Resume Reviewer")
 
@@ -17,3 +17,4 @@ app.add_middleware(
 # Register routes
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(upload.router, prefix="/upload", tags=["upload"])
+app.include_router(chat.router, prefix="/chat", tags=["chat"])

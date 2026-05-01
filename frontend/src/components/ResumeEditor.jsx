@@ -1,46 +1,63 @@
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import TextAlign from "@tiptap/extension-text-align";
 import { Box } from "@mui/material";
-import TipTapEditor from "./TipTapEditor";
-import AIChat from "./AIChat";
+import { useEffect } from "react";
+import EditorNavBar from "./EditorNavBar";
 
-export default function ResumeEditor({ chatOpen, onEditorReady }) {
+export default function ResumeEditor({ onEditorReady }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+    ],
+    content: "<h2>Resume Editor</h2><p>Upload a resume to begin</p>",
+  });
+
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
+
+  if (!editor) return null;
+
   return (
     <Box
       sx={{
-        flex: 1,
         display: "flex",
-        flexDirection: "row",
-        overflow: "hidden",
-        height: "100%", // 🔥 important
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0, // IMPORTANT
       }}
     >
+      {/* Toolbar */}
+      <EditorNavBar editor={editor} />
 
-      {/* LEFT CHAT */}
-      {chatOpen && (
-        <Box
-          sx={{
-            width: 320,
-            borderRight: "1px solid #ddd",
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-          }}
-        >
-          <AIChat />
-        </Box>
-      )}
-
-      {/* MAIN EDITOR */}
+      {/* Editor wrapper */}
       <Box
         sx={{
           flex: 1,
-          display: "flex",
-          flexDirection: "column",
           minHeight: 0,
+          display: "flex",
         }}
       >
-        <TipTapEditor onEditorReady={onEditorReady} />
+        <EditorContent editor={editor} />
       </Box>
 
+      {/* TipTap scroll fix */}
+      <style>{`
+        .ProseMirror {
+          height: 100%;
+          width: 100%;
+          overflow-y: auto;
+          padding: 16px;
+          outline: none;
+          box-sizing: border-box;
+        }
+      `}</style>
     </Box>
   );
 }

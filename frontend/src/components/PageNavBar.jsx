@@ -24,10 +24,7 @@ export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
     if (!file) return;
 
     const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Please login first");
-      return;
-    }
+    if (!token) return alert("Please login first");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -50,20 +47,15 @@ export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
         return;
       }
 
-      console.log("LLM Resume JSON:", data);
-
-      const formatted = parseResumeSafe(data.analysis);
-      console.log(formatted);
-      const html = resumeToHTML(formatted);
-      console.log(html);
+      const resume = parseResumeSafe(data.analysis);
+      const html = resumeToHTML(resume);
 
       if (editor) {
-        console.log("Setting editor content...");
         editor.commands.setContent(html);
       }
 
     } catch (err) {
-      console.error("Upload failed:", err);
+      console.error(err);
       alert("Upload failed");
     } finally {
       setUploading(false);
@@ -73,32 +65,27 @@ export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
   return (
     <AppBar position="static" elevation={1}>
       <Toolbar>
-
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Typography sx={{ flexGrow: 1 }}>
           AI Resume Reviewer
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1 }}>
 
-          {/* Chat toggle */}
           <Button
-            color="inherit"
-            variant="outlined"
-            onClick={() => setChatOpen((prev) => !prev)}
+            variant="contained"
+            onClick={() => setChatOpen((p) => !p)}
           >
             {chatOpen ? "Hide Chat" : "Show Chat"}
           </Button>
 
-          {/* Upload */}
           <Button
-            color="inherit"
             variant="contained"
             component="label"
             disabled={uploading}
           >
             {uploading ? (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <CircularProgress size={16} color="inherit" />
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <CircularProgress size={16} />
                 Uploading
               </Box>
             ) : (
@@ -113,17 +100,11 @@ export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
             />
           </Button>
 
-          {/* Logout */}
-          <Button
-            color="inherit"
-            variant="outlined"
-            onClick={handleLogout}
-          >
+          <Button variant="contained" onClick={handleLogout}>
             Logout
           </Button>
 
         </Box>
-
       </Toolbar>
     </AppBar>
   );

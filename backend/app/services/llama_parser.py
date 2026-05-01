@@ -33,6 +33,7 @@ No explanation.
 Do not add extra keys.
 Do not omit required fields.
 Ensure output is complete and syntactically valid JSON.
+Awards are sometimes not included in resumes, but if they are, extract them as an array of strings. If not present, return an empty array.
 If missing data → empty string or empty array.
 
 Return EXACTLY this schema:

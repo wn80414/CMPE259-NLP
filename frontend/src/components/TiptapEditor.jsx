@@ -4,7 +4,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { Box } from "@mui/material";
 import { useEffect } from "react";
 import EditorNavBar from "./EditorNavBar";
-import { resumeToHTML } from "../utils/resumeToHTML";
+import { resumeToHTML } from "../utils/ResumeFormatter";
 
 export default function TipTapEditor({ resume, onEditorReady }) {
 
@@ -32,6 +32,7 @@ export default function TipTapEditor({ resume, onEditorReady }) {
 
     const html = resumeToHTML(resume);
     editor.commands.setContent(html);
+
   }, [resume, editor]);
 
   if (!editor) return null;
@@ -44,7 +45,7 @@ export default function TipTapEditor({ resume, onEditorReady }) {
       <Box
         sx={{
           flex: 1,
-          minHeight: 0,          // important for proper flexbox scrolling
+          minHeight: 0, 
           overflow: "hidden",
           backgroundColor: "#fff",
           color: "#000",

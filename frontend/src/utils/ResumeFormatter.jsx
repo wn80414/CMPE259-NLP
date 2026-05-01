@@ -10,52 +10,65 @@ export const parseResumeSafe = (llmOutput) => {
     return ResumeSchema.parse(parsed);
   } catch (err) {
     console.error("Zod validation failed:", err);
-
-    // fallback so UI never breaks
     return ResumeSchema.parse({});
   }
 };
 
+const listToHTML = (arr = [], emptyMsg = "") => {
+  if (!arr || arr.length === 0) {
+    return emptyMsg ? `<p style="opacity:0.5">${emptyMsg}</p>` : "";
+  }
+  return arr.map((item) => `<p>• ${item}</p>`).join("");
+};
+
+const keyValue = (label, value) => {
+  if (!value) return "";
+  return `<p><b>${label}:</b> ${value}</p>`;
+};
+
 export const resumeToHTML = (resume = {}) => {
-  if (!resume) return "";
+  if (!resume || typeof resume !== "object") return "";
 
   return `
-    <h2>${resume.name || ""}</h2>
+    <h2>${resume.name || "Unnamed Resume"}</h2>
 
-    <p><b>Email:</b> ${resume.email || ""}</p>
-    <p><b>Phone:</b> ${resume.phone || ""}</p>
-    <p><b>GitHub:</b> ${resume.github || ""}</p>
-    <p><b>LinkedIn:</b> ${resume.linkedin || ""}</p>
+    ${keyValue("Email", resume.email)}
+    ${keyValue("Phone", resume.phone)}
+    ${keyValue("GitHub", resume.github)}
+    ${keyValue("LinkedIn", resume.linkedin)}
 
     <hr/>
 
     <h3>Experience</h3>
     ${(resume.experience || [])
-      .map(
-        (exp) => `
-          <p><b>${exp.company || ""} — ${exp.role || ""}</b></p>
-          ${(exp.bullets || [])
-            .map((b) => `<p>• ${b}</p>`)
-            .join("")}
-        `
-      )
-      .join("")}
+      .map((exp) => `
+        <p><b>${exp.company || ""} — ${exp.role || ""}</b></p>
+        ${listToHTML(exp.bullets)}
+      `)
+      .join("") || `<p style="opacity:0.5">No experience provided</p>`}
 
     <h3>Projects</h3>
     ${(resume.projects || [])
-      .map(
-        (p) => `
-          <p><b>${p.name || ""}</b></p>
-          ${(p.bullets || [])
-            .map((b) => `<p>• ${b}</p>`)
-            .join("")}
-        `
-      )
-      .join("")}
+      .map((p) => `
+        <p><b>${p.name || ""}</b></p>
+        ${listToHTML(p.bullets)}
+      `)
+      .join("") || `<p style="opacity:0.5">No projects provided</p>`}
+
+    <hr/>
 
     <h3>Skills</h3>
-    ${(resume.skills?.languages || [])
-      .map((s) => `<p>${s}</p>`)
+    ${Object.entries(resume.skills || {})
+      .map(([key, arr]) => `
+        <p><b>${key.toUpperCase()}</b></p>
+        ${listToHTML(arr, "Missing " + key + " skills")}
+      `)
       .join("")}
+
+    <h3>Awards</h3>
+    ${listToHTML(
+      resume.awards,
+      "No awards listed — add achievements or honors"
+    )}
   `;
 };

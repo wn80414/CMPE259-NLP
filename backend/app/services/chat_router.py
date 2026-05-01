@@ -1,5 +1,6 @@
 from app.services.intent_router import classify_intent
 from app.services.llama_parser import analyze_resume
+from app.services.general_chat import chat_with_llama
 import json
 
 
@@ -68,5 +69,5 @@ def route_message(message: str, user_id: str, resume_text: str = None):
     # ---------------- DEFAULT ----------------
     return {
         "type": "general_chat",
-        "response": "I can help with resume critique, search, or history. What would you like?"
+        "response": chat_with_llama(message)
     }

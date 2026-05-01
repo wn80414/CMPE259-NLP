@@ -1,100 +1,66 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Box, Paper, TextField, IconButton, Button } from "@mui/material";
+import SendIcon from "@mui/icons-material/Send";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+const STORAGE_KEY = "ai_chat_messages";
 
 export default function AIChat({ resumeText = null }) {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    } catch {
+      return [];
+    }
+  });
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // persist messages whenever they change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
+
+  const clearChat = () => {
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
   const sendMessage = async () => {
-    const trimmed = input.trim();
-    if (!trimmed || loading) return;
+    if (!input.trim() || loading) return;
 
-    const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
-
-    // user message
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", text: trimmed }
-    ]);
-
+    const msg = input;
     setInput("");
-    setLoading(true);
-    const payload = {
-      message: input?.trim() || "",
-      user_id: localStorage.getItem("userId") ?? "",
-      resume_text: resumeText ?? null
-    };
 
-    console.log("CHAT PAYLOAD:", payload);
+    setMessages((prev) => [...prev, { role: "user", text: msg }]);
+    setLoading(true);
+
     try {
       const res = await fetch("http://127.0.0.1:8000/chat/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : ""
-        },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: msg,
+          user_id: localStorage.getItem("userId"),
+          resume_text: resumeText,
+        }),
       });
 
       const data = await res.json();
-      console.log("CHAT RESPONSE:", data);
-
-      let text = "";
-
-      // ---------------- RESUME CRITIQUE ----------------
-      if (data.type === "resume_critique") {
-        text = "📄 Resume Critique\n\n";
-
-        if (data.data?.name) {
-          text += `Name: ${data.data.name}\n\n`;
-        }
-
-        if (data.feedback?.length) {
-          text += "Suggestions:\n";
-          text += data.feedback.map(f => `• ${f}`).join("\n");
-        } else {
-          text += "No feedback returned.";
-        }
-      }
-
-      // ---------------- WEB SEARCH ----------------
-      else if (data.type === "web_search") {
-        text =
-          "🌐 Web Results:\n\n" +
-          (data.results || [])
-            .map(r => `${r.title}\n${r.snippet}\n${r.url}`)
-            .join("\n\n");
-      }
-
-      // ---------------- HISTORY ----------------
-      else if (data.type === "resume_history") {
-        text =
-          "📚 Resume History:\n\n" +
-          (data.resumes || [])
-            .map(r => `${r.name} (${r.updated})`)
-            .join("\n");
-      }
-
-      // ---------------- GENERAL ----------------
-      else {
-        text = data.response || "No response returned.";
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", text }
-      ]);
-
-    } catch (err) {
-      console.error(err);
 
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: "Error: failed to reach backend"
-        }
+          text: data.response || "No response",
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", text: "Error contacting server" },
       ]);
     } finally {
       setLoading(false);
@@ -102,47 +68,92 @@ export default function AIChat({ resumeText = null }) {
   };
 
   return (
-    <div className="flex flex-col h-full p-3">
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+
+      {/* Header */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 1,
+          borderBottom: "1px solid #eee",
+        }}
+      >
+        <Box sx={{ fontWeight: 600 }}>AI Chat</Box>
+
+        <Button
+          size="small"
+          color="error"
+          onClick={clearChat}
+        >
+          Clear
+        </Button>
+      </Box>
 
       {/* Messages */}
-      <div className="flex-1 overflow-auto space-y-2">
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          p: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.5,
+        }}
+      >
         {messages.map((m, i) => (
-          <div
+          <Box
             key={i}
-            className={
-              m.role === "user"
-                ? "text-right text-blue-600"
-                : "text-left text-gray-800 whitespace-pre-wrap"
-            }
+            sx={{
+              display: "flex",
+              justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+            }}
           >
-            {m.text}
-          </div>
+            <Paper
+              sx={{
+                p: 1.5,
+                maxWidth: "70%",
+                bgcolor: m.role === "user" ? "black" : "white",
+                color: m.role === "user" ? "white" : "black",
+                borderRadius: 3,
+                fontSize: 14,
+                lineHeight: 1.6,
+
+                "& p": { margin: "4px 0" },
+                "& ul, & ol": { margin: "4px 0", paddingLeft: "18px" },
+                "& li": { margin: "2px 0" },
+              }}
+            >
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {m.text}
+              </ReactMarkdown>
+            </Paper>
+          </Box>
         ))}
 
         {loading && (
-          <div className="text-left text-gray-500">
+          <Box sx={{ opacity: 0.6, fontSize: 12 }}>
             Thinking...
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {/* Input */}
-      <div className="flex gap-2 mt-2">
-        <input
-          className="border flex-1 px-2 py-1"
+      <Box sx={{ p: 2, display: "flex", gap: 1 }}>
+        <TextField
+          fullWidth
+          size="small"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about your resume..."
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="Ask something..."
         />
 
-        <button
-          onClick={sendMessage}
-          className="bg-black text-white px-3 py-1"
-        >
-          Send
-        </button>
-      </div>
-    </div>
+        <IconButton onClick={sendMessage}>
+          <SendIcon />
+        </IconButton>
+      </Box>
+    </Box>
   );
 }

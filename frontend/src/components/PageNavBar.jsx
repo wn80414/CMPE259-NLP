@@ -1,5 +1,4 @@
 import { useState } from "react";
-import API_URL from "../config/api";
 import {
   AppBar,
   Toolbar,

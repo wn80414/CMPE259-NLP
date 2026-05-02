@@ -9,7 +9,7 @@ print("Allowing CORS for frontend at: " + settings.frontend_host + ":" + str(set
 app.add_middleware(
     CORSMiddleware,
     
-    allow_origins=[settings.frontend_host + ":" + str(settings.frontend_port)],
+    allow_origins=["*"],
 
     allow_credentials=True,
     allow_methods=["*"],

@@ -1,4 +1,3 @@
-import fitz  # PyMuPDF
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Header
 from supabase import create_client
 from app.core.config import settings

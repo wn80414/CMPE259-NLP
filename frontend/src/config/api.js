@@ -1,8 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL;
-
-console.log("Using API URL:", API_URL);
+export const API_URL = import.meta.env.VITE_API_URL;
 
 if (!API_URL) {
-  throw new Error("REACT_APP_API_URL is not defined in environment variables");
+  console.error("Missing VITE_API_URL in .env");
 }
-export default API_URL;

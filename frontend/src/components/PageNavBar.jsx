@@ -7,9 +7,9 @@ import {
   Box,
   CircularProgress
 } from "@mui/material";
-
-import { parseResumeSafe, resumeToHTML } from "../utils/ResumeFormatter";
 import API_URL from "../config/api";
+import { parseResumeSafe, resumeToHTML } from "../utils/ResumeFormatter";
+
 
 export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
   const [uploading, setUploading] = useState(false);

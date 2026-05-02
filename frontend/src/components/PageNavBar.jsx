@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 
 import { parseResumeSafe, resumeToHTML } from "../utils/ResumeFormatter";
-
+const API_URL = "http://54.177.41.173";
 
 export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
   const [uploading, setUploading] = useState(false);

@@ -10,7 +10,7 @@ import {
 import SendIcon from "@mui/icons-material/Send";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
+import API_URL from "../config/api";
 const STORAGE_KEY = "ai_chat_messages";
 
 /* ---------------- HELPERS ---------------- */
@@ -98,7 +98,7 @@ function getBubbleStyles(role) {
 }
 
 async function sendChatRequest(message, resumeText) {
-  const res = await fetch("http://127.0.0.1:8000/chat/", {
+  const res = await fetch(`${API_URL}/chat/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

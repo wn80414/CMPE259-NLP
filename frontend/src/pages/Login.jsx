@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Box, TextField, Button, Typography, Tab, Tabs } from "@mui/material";
+import API_URL from "../config/api";
 
 export default function AuthPage() {
   const [tab, setTab] = useState(0);
@@ -20,7 +21,7 @@ export default function AuthPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("http://127.0.0.1:8000/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -50,7 +51,7 @@ export default function AuthPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("http://127.0.0.1:8000/auth/signup", {
+      const response = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

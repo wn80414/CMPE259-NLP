@@ -32,7 +32,7 @@ export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
     setUploading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/upload/", {
+      const res = await fetch(`${API_URL}/upload/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

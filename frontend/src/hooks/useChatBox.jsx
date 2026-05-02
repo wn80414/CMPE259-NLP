@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import API_URL from "../config/api";
 const STORAGE_KEY = "ai_chat_messages";
 
 export function useChatBox(resumeText = null) {
@@ -47,7 +47,7 @@ export function useChatBox(resumeText = null) {
     setLoading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/chat/", {
+      const res = await fetch(`${API_URL}/chat/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

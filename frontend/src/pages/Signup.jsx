@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Box, TextField, Button, Typography } from "@mui/material";
+import API_URL from "../config/api";
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -13,7 +14,7 @@ export default function Signup() {
   };
 
   const handleSignup = async () => {
-    await fetch("http://127.0.0.1:8000/auth/signup", {
+    await fetch(`${API_URL}/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form)

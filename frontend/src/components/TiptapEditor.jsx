@@ -50,7 +50,7 @@ export default function TipTapEditor({ onEditorReady }) {
           flex: 1,
           display: "flex",
           minHeight: 0,
-          overflow: "hidden", // 🚫 no scroll here
+          overflow: "hidden"
         }}
       >
         <EditorContent editor={editor} />

@@ -4,6 +4,7 @@ import { Box } from "@mui/material";
 import PageNavBar from "../components/PageNavBar";
 import ResumeEditor from "../components/ResumeEditor";
 import AIChat from "../components/AIChat";
+import API_URL from "../config/api";
 
 export default function ResumePage() {
   const [chatOpen, setChatOpen] = useState(true);

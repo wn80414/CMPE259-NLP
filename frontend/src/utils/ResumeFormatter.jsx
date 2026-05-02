@@ -1,4 +1,5 @@
 import { ResumeSchema } from "../schema/ResumeSchema";
+import API_URL from "../config/api";
 
 export const parseResumeSafe = (llmOutput) => {
   try {

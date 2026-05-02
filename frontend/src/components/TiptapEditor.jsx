@@ -3,6 +3,7 @@ import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import { Box, GlobalStyles } from "@mui/material";
 import { useEffect } from "react";
+import API_URL from "../config/api";
 
 export default function TipTapEditor({ onEditorReady }) {
   const editor = useEditor({

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import API_URL from "../config/api";
 
 export const ResumeSchema = z.object({
   name: z.string().default(""),

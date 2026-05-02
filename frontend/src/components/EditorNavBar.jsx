@@ -1,4 +1,5 @@
 import { Box, Button, Divider } from "@mui/material";
+import API_URL from "../config/api";
 
 export default function EditorNavBar({ editor }) {
   if (!editor) return null;

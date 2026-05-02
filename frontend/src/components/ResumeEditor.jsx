@@ -20,6 +20,7 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import EditorNavBar from "./EditorNavBar";
+import API_URL from "../config/api";
 
 export default function ResumeEditor({
   onEditorReady,

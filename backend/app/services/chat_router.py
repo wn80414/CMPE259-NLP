@@ -1,6 +1,7 @@
 from app.services.intent_router import classify_intent
 from app.services.llama_parser import analyze_resume
 from app.services.general_chat import chat_with_llama
+from app.services.llm_resume_critiquer import critique_resume_with_edits
 import json
 
 
@@ -12,25 +13,7 @@ def route_message(message: str, user_id: str, resume_text: str = None):
 
     # ---------------- RESUME CRITIQUE ----------------
     if name == "resume_critique":
-        if resume_text:
-            analyzed = analyze_resume(resume_text)
-
-            return {
-                "type": "resume_critique",
-                "data": analyzed,
-                "feedback": [
-                    "Add more measurable impact in experience bullets",
-                    "Your projects are strong but lack system design depth",
-                    "Consider adding deployment details (CI/CD, scaling)"
-                ]
-            }
-
-        return {
-            "type": "resume_critique",
-            "error": "No resume found",
-            "message": "Please upload a resume first."
-        }
-
+        return critique_resume_with_edits(resume_text)
 
     # ---------------- WEB SEARCH (MOCK FOR NOW) ----------------
     if name == "web_search":

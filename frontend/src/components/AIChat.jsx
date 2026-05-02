@@ -1,86 +1,206 @@
 import { useEffect, useState } from "react";
-import { Box, Paper, TextField, IconButton, Button } from "@mui/material";
+import {
+  Box,
+  Paper,
+  TextField,
+  IconButton,
+  Button,
+  Typography,
+} from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 const STORAGE_KEY = "ai_chat_messages";
 
-export default function AIChat({ resumeText = null }) {
-  const [messages, setMessages] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-      return [];
-    }
+/* ---------------- HELPERS ---------------- */
+
+function loadMessages() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(messages) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+}
+
+function clearStoredMessages() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+function createMessage(role, text) {
+  return { role, text };
+}
+
+function normalizeSuggestions(changes = []) {
+  return changes.map((item) => ({
+    ...item,
+    status: "pending",
+  }));
+}
+
+function formatResumeSuggestions(data) {
+  let text = `# Resume Review\n\n${data.summary}\n\n`;
+
+  data.changes?.forEach((item, index) => {
+    text += `## ${index + 1}. ${item.category}\n`;
+    text += `**Before:** ${item.old_text}\n\n`;
+    text += `**After:** ${item.new_text}\n\n`;
+    text += `**Why:** ${item.reason}\n\n---\n\n`;
   });
 
+  return text;
+}
+
+function formatResponse(data) {
+  if (data.type === "resume_suggestions") {
+    return formatResumeSuggestions(data);
+  }
+
+  return data.response || "No response";
+}
+
+function getBubbleStyles(role) {
+  const isUser = role === "user";
+
+  return {
+    p: 1.5,
+    maxWidth: "78%",
+    borderRadius: 3,
+    fontSize: 14,
+    lineHeight: 1.65,
+    bgcolor: isUser ? "#111" : "#fff",
+    color: isUser ? "#fff" : "#111",
+    border: isUser ? "none" : "1px solid #eee",
+    boxShadow: isUser
+      ? "none"
+      : "0 1px 4px rgba(0,0,0,0.04)",
+
+    "& p": { margin: "6px 0" },
+    "& ul, & ol": {
+      margin: "6px 0",
+      paddingLeft: "18px",
+    },
+    "& li": { margin: "2px 0" },
+    "& h1, & h2, & h3": {
+      margin: "8px 0 4px",
+      fontSize: "1rem",
+    },
+    "& hr": {
+      border: "none",
+      borderTop: "1px solid #eee",
+      margin: "10px 0",
+    },
+  };
+}
+
+async function sendChatRequest(message, resumeText) {
+  const res = await fetch("http://127.0.0.1:8000/chat/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message,
+      user_id: localStorage.getItem("userId") || "",
+      resume_text: resumeText,
+    }),
+  });
+
+  return await res.json();
+}
+
+/* ---------------- COMPONENT ---------------- */
+
+export default function AIChat({
+  resumeText = "",
+  setSuggestions,
+}) {
+  const [messages, setMessages] = useState(loadMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // persist messages whenever they change
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    saveMessages(messages);
   }, [messages]);
+
+  const addMessage = (role, text) => {
+    setMessages((prev) => [
+      ...prev,
+      createMessage(role, text),
+    ]);
+  };
 
   const clearChat = () => {
     setMessages([]);
-    localStorage.removeItem(STORAGE_KEY);
+    clearStoredMessages();
+  };
+
+  const handleSuggestions = (data) => {
+    if (
+      data.type === "resume_suggestions" &&
+      typeof setSuggestions === "function"
+    ) {
+      setSuggestions(
+        normalizeSuggestions(data.changes)
+      );
+    }
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+    const trimmed = input.trim();
 
-    const msg = input;
+    if (!trimmed || loading) return;
+
     setInput("");
-
-    setMessages((prev) => [...prev, { role: "user", text: msg }]);
+    addMessage("user", trimmed);
     setLoading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/chat/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: msg,
-          user_id: localStorage.getItem("userId"),
-          resume_text: resumeText,
-        }),
-      });
+      const data = await sendChatRequest(
+        trimmed,
+        resumeText
+      );
 
-      const data = await res.json();
+      handleSuggestions(data);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: data.response || "No response",
-        },
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", text: "Error contacting server" },
-      ]);
+      addMessage("ai", formatResponse(data));
+    } catch (error) {
+      addMessage(
+        "ai",
+        "Error contacting server."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        bgcolor: "#fafafa",
+      }}
+    >
       {/* Header */}
       <Box
         sx={{
+          p: 1.5,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          p: 1,
           borderBottom: "1px solid #eee",
+          bgcolor: "#fff",
         }}
       >
-        <Box sx={{ fontWeight: 600 }}>AI Chat</Box>
+        <Typography fontWeight={700}>
+          AI Chat
+        </Typography>
 
         <Button
           size="small"
@@ -102,55 +222,64 @@ export default function AIChat({ resumeText = null }) {
           gap: 1.5,
         }}
       >
-        {messages.map((m, i) => (
+        {messages.map((msg, index) => (
           <Box
-            key={i}
+            key={index}
             sx={{
               display: "flex",
-              justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+              justifyContent:
+                msg.role === "user"
+                  ? "flex-end"
+                  : "flex-start",
             }}
           >
-            <Paper
-              sx={{
-                p: 1.5,
-                maxWidth: "70%",
-                bgcolor: m.role === "user" ? "black" : "white",
-                color: m.role === "user" ? "white" : "black",
-                borderRadius: 3,
-                fontSize: 14,
-                lineHeight: 1.6,
-
-                "& p": { margin: "4px 0" },
-                "& ul, & ol": { margin: "4px 0", paddingLeft: "18px" },
-                "& li": { margin: "2px 0" },
-              }}
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {m.text}
+            <Paper sx={getBubbleStyles(msg.role)}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+              >
+                {msg.text}
               </ReactMarkdown>
             </Paper>
           </Box>
         ))}
 
         {loading && (
-          <Box sx={{ opacity: 0.6, fontSize: 12 }}>
+          <Typography
+            variant="caption"
+            sx={{ opacity: 0.6 }}
+          >
             Thinking...
-          </Box>
+          </Typography>
         )}
       </Box>
 
       {/* Input */}
-      <Box sx={{ p: 2, display: "flex", gap: 1 }}>
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          gap: 1,
+          borderTop: "1px solid #eee",
+          bgcolor: "#fff",
+        }}
+      >
         <TextField
           fullWidth
           size="small"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Ask something..."
+          value={input}
+          onChange={(e) =>
+            setInput(e.target.value)
+          }
+          onKeyDown={(e) =>
+            e.key === "Enter" && sendMessage()
+          }
         />
 
-        <IconButton onClick={sendMessage}>
+        <IconButton
+          onClick={sendMessage}
+          disabled={!input.trim() || loading}
+        >
           <SendIcon />
         </IconButton>
       </Box>

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_key: str
     hf_token: str
-    app_host: str = "127.0.0.1"
+    app_host: str = "0.0.0.0"
     app_port: int = 8000
     frontend_host: str = "http://localhost"
     frontend_port: int = 5173

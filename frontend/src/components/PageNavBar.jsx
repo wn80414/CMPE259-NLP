@@ -7,6 +7,9 @@ import {
   Box,
   CircularProgress
 } from "@mui/material";
+import { getToken } from "../auth/auth"; 
+
+const token = getToken();
 
 import { parseResumeSafe, resumeToHTML } from "../utils/ResumeFormatter";
 const API_URL = "http://54.177.41.173:8000";
@@ -24,7 +27,6 @@ export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const token = localStorage.getItem("token");
     if (!token) return alert("Please login first");
 
     const formData = new FormData();

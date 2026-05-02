@@ -13,3 +13,9 @@ pydantic
 
 pypdf
 supabase
+
+pymupdf
+fitz
+
+pydantic-settings
+huggingface_hub

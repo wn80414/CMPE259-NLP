@@ -52,5 +52,5 @@ def route_message(message: str, user_id: str, resume_text: str = None):
     # ---------------- DEFAULT ----------------
     return {
         "type": "general_chat",
-        "response": chat_with_llama(message)
+        "response": "Sorry, I didn't understand that. Can you please rephrase?"
     }

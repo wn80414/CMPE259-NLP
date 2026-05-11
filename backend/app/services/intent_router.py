@@ -8,13 +8,6 @@ client = InferenceClient(
 )
 
 
-INTENT_SCHEMA = {
-    "intent": "",
-    "confidence": 0.0,
-    "reason": ""
-}
-
-
 def classify_intent(message: str):
     response = client.chat_completion(
         messages=[
@@ -23,22 +16,29 @@ def classify_intent(message: str):
                 "content": """
 You are an intent classifier for a resume AI system.
 
-Classify the user message into ONE of:
+Classify into ONLY ONE of:
 
-- resume_critique (user wants resume feedback or improvement)
-- web_search (user asks for external info or lookup)
-- resume_history (user asks about past uploads or stored resumes)
-- general_chat (anything else)
+1. resume_engine
+   (resume feedback, rewrite, ATS optimization, tailoring, improvements)
 
-Return ONLY valid JSON in this format:
+2. general_chat
+   (everything else)
+
+Return ONLY valid JSON:
 
 {
-  "intent": "...",
+  "intent": "resume_engine | general_chat",
+  "sub_intent": "rewrite | tailor | ats | critique | match | null",
   "confidence": 0.0,
   "reason": "short explanation"
 }
 
-No markdown. No extra text.
+Rules:
+- If user mentions job role (QA, SWE, data engineer) → resume_engine + sub_intent = tailor
+- If user asks improve resume → resume_engine + sub_intent = rewrite
+- If user asks ATS keywords → resume_engine + sub_intent = ats
+- If user compares resume to jobs → job_search OR resume_engine + match (prefer resume_engine)
+- No markdown. JSON only.
 """
             },
             {"role": "user", "content": message}
@@ -52,9 +52,9 @@ No markdown. No extra text.
     try:
         return json.loads(content)
     except Exception:
-        # fallback safe default
         return {
             "intent": "general_chat",
+            "sub_intent": None,
             "confidence": 0.5,
             "reason": "parse_failed_fallback"
         }

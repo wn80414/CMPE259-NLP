@@ -5,14 +5,16 @@ router = APIRouter()
 
 @router.post("/")
 async def chat(request: Request):
-    print("Received chat request")
     body = await request.json()
 
     message = body.get("message", "")
     user_id = body.get("user_id", "")
-    resume_text = body.get("resume_text")
-    print("Received chat message:", message)
-    print("Received user ID:", user_id)
-    print("Received resume text:", resume_text)
-
-    return route_message(message, user_id, resume_text)
+    resume_id = body.get("resume_id") # Use the ID for pgvector RAG
+    print("Received message:", message)
+    print("Received resume_id:", resume_id)
+    # We pass the JSON object directly to your routing/logic layer
+    return route_message(
+        message=message, 
+        user_id=user_id,
+        resume_id=resume_id,
+    )

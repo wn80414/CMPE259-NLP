@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     app_port: int = 8000
     frontend_host: str = "http://localhost"
     frontend_port: int = 5173
-    openai_api_key: str
-
+    serpapi_key: str
+    jsearch_api_key: str
     class Config:
         env_file = ".env"
 

@@ -1,56 +1,33 @@
+from app.services.resume_engine import resume_engine
 from app.services.intent_router import classify_intent
-from app.services.llama_parser import analyze_resume
-from app.services.general_chat import chat_with_llama
-from app.services.llm_resume_critiquer import critique_resume_with_edits
-import json
+from app.services.serp_jobs import fetch_jobs
 
 
-def route_message(message: str, user_id: str, resume_text: str = None):
-    resume_text = resume_text.strip() if resume_text else None
-    intent = classify_intent(message)
-    print(intent)
-    name = intent.get("intent")
+def route_message(message, user_id, resume_id=None):
 
-    # ---------------- RESUME CRITIQUE ----------------
-    if name == "resume_critique":
-        return critique_resume_with_edits(resume_text)
+    intent_data = classify_intent(message)
+    intent = intent_data.get("intent")
+    sub_intent = intent_data.get("sub_intent")
 
-    # ---------------- WEB SEARCH (MOCK FOR NOW) ----------------
-    if name == "web_search":
-        return {
-            "type": "web_search",
-            "query": message,
-            "results": [
-                {
-                    "title": "Mock Search Result 1",
-                    "snippet": "This is a simulated web result for development.",
-                    "url": "https://example.com"
-                },
-                {
-                    "title": "Mock Search Result 2",
-                    "snippet": "Another placeholder search result.",
-                    "url": "https://example.com"
-                }
-            ]
-        }
+    print("Classified intent:", intent, "Sub-intent:", sub_intent)
 
+    # ---------------- RESUME ENGINE ----------------
+    if intent == "resume_engine":
+        if not resume_id:
+            return {"error": "resume_id required for resume operations"}
 
-    # ---------------- HISTORY ----------------
-    if name == "resume_history":
-        return {
-            "type": "resume_history",
-            "resumes": [
-                {
-                    "id": "mock-1",
-                    "name": "Latest Resume",
-                    "updated": "2026-05-01"
-                }
-            ]
-        }
+        return resume_engine(
+            resume_id=resume_id,
+            user_id=user_id,
+            query=message,
+            mode=sub_intent or "general"
+        )
+    # ---------------- GENERAL CHAT ----------------
+    if intent == "general_chat":
+        return "Ask a question or request assistance related to resumes, job searching, or career advice."
 
-
-    # ---------------- DEFAULT ----------------
+    # ---------------- FALLBACK ----------------
     return {
-        "type": "general_chat",
-        "response": "Sorry, I didn't understand that. Can you please rephrase?"
+        "type": "error",
+        "message": "Unable to process request"
     }

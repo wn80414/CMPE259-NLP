@@ -45,14 +45,18 @@ const handleUpload = async (e) => {
     });
 
     const data = await res.json();
-    console.log("Raw Backend Data:", data.data);
+
     if (!res.ok) {
       alert(data.detail || "Upload failed");
       return;
     }
+    console.log(data.id);
+    if (data.id) {
+      localStorage.setItem("resume_id", data.id);
+    }
 
     const parsedData = ResumeSchema.parse(data.data);
-    
+
     setResume(parsedData);
 
     alert("Resume parsed and loaded into editor!");

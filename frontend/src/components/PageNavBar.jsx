@@ -9,12 +9,13 @@ import {
 } from "@mui/material";
 import { getToken } from "../auth/auth"; 
 import API_URL from "../config/api";
+import { ResumeSchema } from "../schema/ResumeSchema";
 
 const token = getToken();
 
 import { parseResumeSafe, resumeToHTML } from "../utils/ResumeFormatter";
 
-export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
+export default function PageNavBar({ chatOpen, setChatOpen, setResume }) {
   const [uploading, setUploading] = useState(false);
 
   const handleLogout = () => {
@@ -23,47 +24,46 @@ export default function PageNavBar({ chatOpen, setChatOpen, editor }) {
     window.location.href = "/login";
   };
 
-  const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+const handleUpload = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    if (!token) return alert("Please login first");
+  if (!token) return alert("Please login first");
 
-    const formData = new FormData();
-    formData.append("file", file);
+  const formData = new FormData();
+  formData.append("file", file);
 
-    setUploading(true);
+  setUploading(true);
 
-    try {
-      const res = await fetch(`${API_URL}/upload/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+  try {
+    const res = await fetch(`${API_URL}/upload/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.detail || "Upload failed");
-        return;
-      }
-
-      const resume = parseResumeSafe(data.analysis);
-      const html = resumeToHTML(resume);
-
-      if (editor) {
-        editor.commands.setContent(html);
-      }
-
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed");
-    } finally {
-      setUploading(false);
+    const data = await res.json();
+    console.log("Raw Backend Data:", data.data);
+    if (!res.ok) {
+      alert(data.detail || "Upload failed");
+      return;
     }
-  };
+
+    const parsedData = ResumeSchema.parse(data.data);
+    
+    setResume(parsedData);
+
+    alert("Resume parsed and loaded into editor!");
+
+  } catch (err) {
+    console.error("Upload Error:", err);
+    alert("Upload failed. Ensure the server returned valid JSON.");
+  } finally {
+    setUploading(false);
+  }
+};
 
   return (
     <AppBar position="static" elevation={1}>

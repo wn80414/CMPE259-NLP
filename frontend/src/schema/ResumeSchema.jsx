@@ -54,3 +54,5 @@ export const ResumeSchema = z.object({
 
   raw_summary: z.string().default(""),
 });
+
+export default ResumeSchema;

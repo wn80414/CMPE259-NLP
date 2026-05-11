@@ -1,3 +1,5 @@
+import re
+
 from huggingface_hub import InferenceClient
 from app.core.config import settings
 import json
@@ -98,17 +100,26 @@ Rules:
     print("LLM Output:", content)  # Debugging
     # Safe parse
     return safe_parse_llm(content)
-
+  
 def safe_parse_llm(text: str):
     try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # attempt cleanup
+        # 1. Try to find JSON content between triple backticks if they exist
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+        if match:
+            text = match.group(1)
+        
+        # 2. Basic cleanup of whitespace
         text = text.strip()
-
-        # sometimes models wrap in ```json
-        if text.startswith("```"):
-            text = text.strip("```json").strip("```")
-
-        # retry
+        
+        # 3. Attempt to load
         return json.loads(text)
+    except json.JSONDecodeError as e:
+        print(f"Failed to parse LLM output: {text}")
+        # Fallback: Return a default empty structure matching your ResumeSchema
+        return {
+            "name": "",
+            "email": "",
+            "experience": [],
+            "projects": [],
+            "skills": {"languages": [], "cloud": [], "ml_ai": [], "tools": []}
+        }

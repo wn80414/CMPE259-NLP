@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.routes import upload, auth, chat
+from app.routes import upload, auth, chat, resume
 
 app = FastAPI(title="AI Resume Reviewer")
 print("Allowing CORS for frontend at: " + settings.frontend_host + ":" + str(settings.frontend_port))
@@ -9,7 +9,7 @@ print("Allowing CORS for frontend at: " + settings.frontend_host + ":" + str(set
 app.add_middleware(
     CORSMiddleware,
     
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "https://cmpe-259-nlp.vercel.app"],
 
     allow_credentials=True,
     allow_methods=["*"],
@@ -20,3 +20,4 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(upload.router, prefix="/upload", tags=["upload"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
+app.include_router(resume.router, prefix="/resume", tags=["resume"])

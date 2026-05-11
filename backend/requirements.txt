@@ -18,3 +18,5 @@ pymupdf
 
 pydantic-settings
 huggingface_hub
+
+sentence-transformers

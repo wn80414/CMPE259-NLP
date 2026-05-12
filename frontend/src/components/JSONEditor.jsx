@@ -82,7 +82,7 @@ const JSONEditor = ({
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <Stack spacing={4} sx={{ maxWidth: '900px', margin: '0 auto', pb: 10 }}>
         {/* Title */}
-        <Typography variant="h4" fontWeight="800">Resume Architect</Typography>
+        <Typography variant="h4" fontWeight="800">Resume Builder</Typography>
 
         {/* BASIC INFO (unchanged – copy from your existing code) */}
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>

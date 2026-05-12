@@ -183,7 +183,7 @@ export default function PageNavBar({ chatOpen, setChatOpen, resume, setResume })
                 Saving
               </Box>
             ) : (
-              "Save Resume"
+              "Save to Vector Store"
             )}
           </Button>
           <Button

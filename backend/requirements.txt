@@ -25,4 +25,4 @@ google-search-results
 jinja2
 typing-extensions
 
-xhtml2pdf
+reportlab

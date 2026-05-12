@@ -1,24 +1,7 @@
-from huggingface_hub import InferenceClient
-from huggingface_hub.utils import HfHubHTTPError
-import time
-from app.core.config import settings
+from fastembed import TextEmbedding
 
-client = InferenceClient(
-    model="BAAI/bge-small-en-v1.5",
-    token=settings.hf_token,
-    timeout=60,
-)
+model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
 
-def get_embedding(text: str, retries: int = 3):
-    for attempt in range(retries):
-        try:
-            embedding = client.feature_extraction(text)
-            return embedding.tolist()
-
-        except HfHubHTTPError as e:
-            print(f"HF error: {e}")
-
-            if attempt == retries - 1:
-                raise
-
-            time.sleep(2 * (attempt + 1))
+def get_embedding(text: str):
+    embedding = next(model.embed([text]))
+    return embedding.tolist()

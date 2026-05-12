@@ -1,7 +1,9 @@
-from fastembed import TextEmbedding
-
-model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+from huggingface_hub import InferenceClient
+from app.core.config import settings
+client = InferenceClient(
+    model="BAAI/bge-small-en-v1.5",
+    token=settings.hf_token
+)
 
 def get_embedding(text: str):
-    embedding = next(model.embed([text]))
-    return embedding.tolist()
+    return client.feature_extraction(text)

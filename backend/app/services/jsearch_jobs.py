@@ -2,6 +2,10 @@ import requests
 from app.core.config import settings
 
 
+def safe_str(value):
+    return value or ""
+
+
 def fetch_jobs(query: str, location: str = "US", limit: int = 5):
     url = "https://jsearch.p.rapidapi.com/search"
 
@@ -30,7 +34,8 @@ def fetch_jobs(query: str, location: str = "US", limit: int = 5):
     jobs = []
 
     for i, job in enumerate(raw_jobs[:limit]):
-        description = job.get("job_description") or ""
+
+        description = safe_str(job.get("job_description"))
 
         print(f"\n🟡 JOB {i}")
         print("TITLE:", job.get("job_title"))
@@ -40,32 +45,41 @@ def fetch_jobs(query: str, location: str = "US", limit: int = 5):
         if not description:
             continue
 
+        location_text = (
+            f"{safe_str(job.get('job_city'))}, "
+            f"{safe_str(job.get('job_country'))}"
+        ).strip(", ")
+
         jobs.append({
-            "title": job.get("job_title", ""),
-            "company": job.get("employer_name", ""),
-            "location": job.get("job_city", "") + ", " + job.get("job_country", ""),
+            "title": safe_str(job.get("job_title")),
+            "company": safe_str(job.get("employer_name")),
+            "location": location_text,
             "description": description,
             "snippet": description[:300],
-            "url": job.get("job_apply_link", "")
+            "url": safe_str(job.get("job_apply_link"))
         })
 
     print(f"\n✅ FINAL CLEAN JOBS: {len(jobs)}")
+
     return jobs
 
+
 def format_jobs_for_llm(jobs: list) -> str:
+
     if not jobs:
         return "No job data available."
 
     blocks = []
 
     for job in jobs:
+
         blocks.append(f"""
-TITLE: {job.get('title')}
-COMPANY: {job.get('company')}
-LOCATION: {job.get('location')}
+TITLE: {safe_str(job.get('title'))}
+COMPANY: {safe_str(job.get('company'))}
+LOCATION: {safe_str(job.get('location'))}
 
 DESCRIPTION:
-{job.get('description')[:600]}
+{safe_str(job.get('description'))[:600]}
 """)
 
     return "\n\n".join(blocks)

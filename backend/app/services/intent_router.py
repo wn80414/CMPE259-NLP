@@ -29,8 +29,12 @@ Return ONLY valid JSON:
 {
   "intent": "resume_engine | general_chat",
   "sub_intent": "rewrite | tailor | ats | critique | match | null",
+
+  "needs_job_context": true,
+  "job_query": "Google Software Engineer III",
+
   "confidence": 0.0,
-  "reason": "short explanation"
+  "reason": "..."
 }
 
 Rules:

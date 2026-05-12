@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.routes import upload, auth, chat, resume
+from app.routes import upload, auth, chat, resume, save
 
 app = FastAPI(title="AI Resume Reviewer")
 print("Allowing CORS for frontend at: " + settings.frontend_host + ":" + str(settings.frontend_port))
@@ -21,3 +21,4 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(upload.router, prefix="/upload", tags=["upload"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(resume.router, prefix="/resume", tags=["resume"])
+app.include_router(save.router, prefix="/save", tags=["save"])

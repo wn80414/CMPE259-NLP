@@ -45,6 +45,7 @@ export default function ResumePage() {
         <PageNavBar
           chatOpen={chatOpen}
           setChatOpen={setChatOpen}
+          resume={resume}
           setResume={setResume}
         />
       </Box>

@@ -18,6 +18,49 @@ import { parseResumeSafe, resumeToHTML } from "../utils/ResumeFormatter";
 export default function PageNavBar({ chatOpen, setChatOpen, resume, setResume }) {
 
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const exportResume = async () => {
+    if (!token) return alert("Please login first");
+
+    setExporting(true);
+
+    try {
+      const res = await fetch(`${API_URL}/export`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(resume),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Export failed");
+        return;
+      }
+
+      const blob = await res.blob();
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "resume.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+
+      alert("Resume exported successfully!");
+    } catch (err) {
+      console.error("Export Error:", err);
+      alert("Failed to export resume.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleSave = async () => {
     console.log("Saving resume:", resume);
@@ -115,6 +158,20 @@ export default function PageNavBar({ chatOpen, setChatOpen, resume, setResume })
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="contained"
+            onClick={exportResume}
+            disabled={exporting || uploading}
+          >
+            {exporting ? (
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <CircularProgress size={16} />
+                Exporting
+              </Box>
+            ) : (
+              "Export Resume"
+            )}
+          </Button>
           <Button
             variant="contained"
             onClick={handleSave}

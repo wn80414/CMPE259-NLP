@@ -1,0 +1,130 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{margin=0.75in}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{parskip}
+\setlist{nolistnumber}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    pdftitle={Resume}
+}
+
+\begin{document}
+
+{\Huge \textbf{Resume}}
+\par
+\vspace{-0.5em}
+\noindent\rule{\linewidth}{0.5pt}
+\vspace{0.5em}
+
+% ---------------- HEADER ----------------
+{% if resume.name %}
+{\Large \textbf{ {{ resume.name|latex_escape }} }}
+{% endif %}
+
+{% if resume.email %}
+\hspace{0.5em}\href{mailto:{{ resume.email|latex_escape }}}{\texttt{ {{ resume.email|latex_escape }} }}
+{% endif %}
+
+{% if resume.phone %}
+\hspace{0.5em} | {{ resume.phone|latex_escape }}
+{% endif %}
+
+{% if resume.linkedin %}
+\hspace{0.5em} | \href{https://linkedin.com/in/{{ resume.linkedin|latex_escape }}}{LinkedIn}
+{% endif %}
+
+{% if resume.github %}
+\hspace{0.5em} | \href{https://github.com/{{ resume.github|latex_escape }}}{GitHub}
+{% endif %}
+
+\par
+\vspace{0.5em}
+
+% ---------------- SUMMARY ----------------
+{% if resume.raw_summary %}
+\section*{Summary}
+{{ resume.raw_summary|latex_escape }}
+\vspace{0.5em}
+{% endif %}
+
+% ---------------- EXPERIENCE ----------------
+{% if resume.experience %}
+\section*{Experience}
+{% for exp in resume.experience %}
+
+\textbf{ {{ exp.company|latex_escape }} } \hfill {{ exp.role|latex_escape }} \\
+{{ exp.location|latex_escape }} \quad {{ exp.start_date|latex_escape }} -- {{ exp.end_date|latex_escape }}
+
+\begin{itemize}
+{% for bullet in exp.bullets %}
+    \item {{ bullet|latex_escape }}
+{% endfor %}
+\end{itemize}
+
+{% endfor %}
+{% endif %}
+
+% ---------------- PROJECTS ----------------
+{% if resume.projects %}
+\section*{Projects}
+{% for proj in resume.projects %}
+
+\textbf{ {{ proj.name|latex_escape }} } \hfill \textit{ {{ proj.tech_stack|join(', ')|latex_escape }} }
+
+\begin{itemize}
+{% for bullet in proj.bullets %}
+    \item {{ bullet|latex_escape }}
+{% endfor %}
+\end{itemize}
+
+{% endfor %}
+{% endif %}
+
+% ---------------- EDUCATION ----------------
+{% if resume.education %}
+\section*{Education}
+{% for edu in resume.education %}
+
+\textbf{ {{ edu.degree|latex_escape }} } \hfill {{ edu.school|latex_escape }} \\
+{{ edu.location|latex_escape }} \quad {{ edu.graduation_date|latex_escape }}
+
+{% if edu.gpa %}
+\noindent GPA: {{ edu.gpa|latex_escape }}
+{% endif %}
+
+{% if edu.coursework %}
+\noindent\textit{Coursework:} {{ edu.coursework|join(', ')|latex_escape }}
+{% endif %}
+
+\vspace{0.5em}
+{% endfor %}
+{% endif %}
+
+% ---------------- SKILLS ----------------
+{% if resume.skills %}
+\section*{Skills}
+
+{% for category, skills in resume.skills.items() %}
+\textbf{ {{ category|latex_escape }} }: {{ skills|join(', ')|latex_escape }} \\
+{% endfor %}
+
+{% endif %}
+
+% ---------------- AWARDS ----------------
+{% if resume.awards %}
+\section*{Awards}
+\begin{itemize}
+{% for award in resume.awards %}
+    \item {{ award|latex_escape }}
+{% endfor %}
+\end{itemize}
+{% endif %}
+
+\end{document}

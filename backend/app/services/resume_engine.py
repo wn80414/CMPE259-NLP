@@ -2,7 +2,7 @@ import json
 import re
 
 from app.db.supabase import supabase
-from app.core.embeddings import model
+from app.core.embeddings import get_embedding
 from app.services.jsearch_jobs import fetch_jobs, format_jobs_for_llm
 from huggingface_hub import InferenceClient
 from app.core.config import settings
@@ -189,7 +189,9 @@ def resume_engine(resume_id: str, user_id: str, query: str, mode: str = "rewrite
     # ----------------------------------------------------
     # 1. RAG RETRIEVAL (vector chunks)
     # ----------------------------------------------------
-    query_embedding = model.encode(query).tolist()
+    query_embedding = get_embedding(query)
+    print(f"Retrieved query embedding (length {len(query_embedding)})")
+    print("Fetching relevant resume chunks from vector store...")
     chunks = supabase.rpc(
         "match_resume_chunks",
         {
@@ -198,7 +200,7 @@ def resume_engine(resume_id: str, user_id: str, query: str, mode: str = "rewrite
             "filter_resume_id": resume_id
         }
     ).execute().data or []
-
+    print(f"Retrieved {len(chunks)} relevant chunks from vector store")
     def extract_items_from_chunks(chunks):
         items = []
         for chunk in chunks:

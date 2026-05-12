@@ -19,10 +19,11 @@ pymupdf
 pydantic-settings
 huggingface_hub
 
-sentence-transformers
 google-search-results
 
 jinja2
 typing-extensions
 
 reportlab
+
+numpy

@@ -71,12 +71,13 @@ Below is a numbered list of complete resume sections (each item is one project, 
 
 - Strict Rules:
 - Make meaningful changes that are concise and readable.
-- No need to make trivial changes to sections (Experience, Technical Skills, Projects).
+- No need to make trivial changes to section headings (Experience, Technical Skills, Projects).
 - Changes are optional. DO NOT MAKE CHANGES IF IT IS STRONG.
 - For skills section, do NOT prepend any category name (like "Tools:", "Development tools:", "Languages:", "Cloud:", "ML/AI:") to the new_text. The output must be a plain comma‑separated list of skills, without any label.
 - For skills seciton, only ADD or REMOVE skills. NO SENTENCES.
 - For skills section, ONLY MAKE MEANINGFUL CHANGES. NO NEED TO SUGGEST CHANGE BECAUSE OF THE CATEGORY NAME.
 - Limit to 0-6 changes.
+- NEVER MAKE CHANGES TO ANYTHING OTHER THAN BULLETS AND SKILLS
 Output ONLY valid JSON with the following structure:
 {{
   "mode": "{mode}",
@@ -100,6 +101,5 @@ Output ONLY valid JSON with the following structure:
 # Mode descriptions
 MODE_DESCRIPTIONS = {
     "rewrite": "Rewrite resume content to be more impactful, concise, and ATS-friendly. Improve action verbs and highlight achievements.",
-    "tailor": "Tailor the resume to match the specific job descriptions provided. Prioritize adding relevant skills and experience.",
     "critique": "Provide a critical review with specific suggestions for improvement. Do not rewrite; only suggest actionable changes.",
 }

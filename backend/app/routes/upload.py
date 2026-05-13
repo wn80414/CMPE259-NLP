@@ -3,7 +3,7 @@ from supabase import create_client
 from app.core.config import settings
 from app.services.pdf_parser import extract_text_from_pdf
 from app.services.llama_parser import parse_resume
-from app.services.vector_service import VectorService # New Service
+from app.services.vector.vector_service import VectorService # New Service
 
 router = APIRouter()
 supabase = create_client(settings.supabase_url, settings.supabase_key)

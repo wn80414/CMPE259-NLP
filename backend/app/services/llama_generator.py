@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 import re
 from huggingface_hub import InferenceClient
 from app.core.config import settings
-from app.services.prompt_builder import build_resume_prompt, MODE_DESCRIPTIONS
+from app.core.prompt_builder import build_resume_prompt, MODE_DESCRIPTIONS
 
 client = InferenceClient(
     model="meta-llama/Meta-Llama-3-8B-Instruct",

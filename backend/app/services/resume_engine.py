@@ -1,9 +1,9 @@
 import json
 from app.db.supabase import supabase
-from app.services.vector_search import retrieve_and_rerank
+from app.services.vector.vector_search import retrieve_and_rerank
 from app.services.text_processing import flatten_chunks_to_sentences
 from app.services.llama_generator import generate_response
-
+from app.services.jsearch_jobs import fetch_jobs, format_jobs_for_llm
 def detect_focus(query: str):
     query_lower = query.lower()
     sections = []
@@ -15,11 +15,24 @@ def detect_focus(query: str):
         sections.append("skills")
     return sections
 
-def resume_engine(resume_id: str, user_id: str, query: str, mode: str = "rewrite"):
+def resume_engine(resume_id: str, user_id: str, query: str, mode: str = "rewrite", job_context = ""):
     print("\n================ DEBUG: Resume Query ================")
     print("MODE:", mode)
     print("QUERY:", query)
 
+    job_param = ""
+    
+    # EXTRACT JOB SAFELY
+    if job_context:
+        try:
+            temp = fetch_jobs(job_context)
+        except Exception as e:
+            print(f" Failed to fetch jobs: {e}")
+            temp = []   # fallback to empty list
+        job_param = format_jobs_for_llm(temp) 
+    else:
+        job_param = ""
+    print("JOB", job_param)
     # Focus detection
     focus_sections = detect_focus(query)
     filter_type = focus_sections[0] if len(focus_sections) == 1 else None
@@ -49,7 +62,7 @@ def resume_engine(resume_id: str, user_id: str, query: str, mode: str = "rewrite
         paths=paths,
         mode=mode,
         sections_available=sections_available,
-        job_context="",
+        job_context=job_param,
     )
 
     return result

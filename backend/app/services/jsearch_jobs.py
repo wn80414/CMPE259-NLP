@@ -22,28 +22,19 @@ def fetch_jobs(query: str, location: str = "US", limit: int = 5):
     }
 
     response = requests.get(url, headers=headers, params=params)
-
     data = response.json()
-
-    print("🔵 JSEARCH RAW KEYS:", data.keys())
-
     raw_jobs = data.get("data", []) or []
-
-    print(f"🔵 RAW JOB COUNT: {len(raw_jobs)}")
 
     jobs = []
 
     for i, job in enumerate(raw_jobs[:limit]):
 
-        description = safe_str(job.get("job_description"))
+        # Extract skills (list)
+        raw_skills = job.get("job_required_skills") or []
+        skills = ", ".join(raw_skills) if raw_skills else "Not specified"
 
-        print(f"\n🟡 JOB {i}")
-        print("TITLE:", job.get("job_title"))
-        print("COMPANY:", job.get("employer_name"))
-        print("HAS DESC:", bool(description))
-
-        if not description:
-            continue
+        # Employment type
+        employment_type = safe_str(job.get("job_employment_type")) or "Not specified"
 
         location_text = (
             f"{safe_str(job.get('job_city'))}, "
@@ -54,32 +45,27 @@ def fetch_jobs(query: str, location: str = "US", limit: int = 5):
             "title": safe_str(job.get("job_title")),
             "company": safe_str(job.get("employer_name")),
             "location": location_text,
-            "description": description,
-            "snippet": description[:300],
+            "skills": skills,
+            "employment_type": employment_type,
             "url": safe_str(job.get("job_apply_link"))
         })
 
-    print(f"\n✅ FINAL CLEAN JOBS: {len(jobs)}")
-
     return jobs
 
-
 def format_jobs_for_llm(jobs: list) -> str:
-
     if not jobs:
         return "No job data available."
 
     blocks = []
 
     for job in jobs:
-
-        blocks.append(f"""
+        block = f"""
 TITLE: {safe_str(job.get('title'))}
 COMPANY: {safe_str(job.get('company'))}
 LOCATION: {safe_str(job.get('location'))}
-
-DESCRIPTION:
-{safe_str(job.get('description'))[:600]}
-""")
+SKILLS: {safe_str(job.get('skills'))}
+EMPLOYMENT TYPE: {safe_str(job.get('employment_type'))}
+"""
+        blocks.append(block)
 
     return "\n\n".join(blocks)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, BackgroundTasks, Request
 from supabase import create_client
 from app.core.config import settings
-from app.services.vector_service import VectorService
+from app.services.vector.vector_service import VectorService
 
 router = APIRouter()
 supabase = create_client(settings.supabase_url, settings.supabase_key)

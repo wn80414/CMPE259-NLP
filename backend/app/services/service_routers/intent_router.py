@@ -30,8 +30,7 @@ Return ONLY valid JSON:
   "intent": "resume_engine | general_chat",
   "sub_intent": "rewrite | critique",
 
-  "needs_job_context": true,
-  "job_query": "Google Software Engineer III",
+  "job_context": "", e.g: "Software Engineer", "Cloud Engineer", "Quality Assurance Engineer"
 
   "confidence": 0.0,
   "reason": "..."

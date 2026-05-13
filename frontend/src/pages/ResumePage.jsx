@@ -19,9 +19,38 @@ export default function ResumePage() {
 
   const [resume, setResume] = useState(initialResume);
 
-  // SINGLE SOURCE OF TRUTH
   const [suggestions, setSuggestions] = useState([]);
+  const scrollToPath = (path) => {
+    const element = document.getElementById(path);
+    if (!element) {
+      console.warn(`Element with id "${path}" not found.`);
+      return;
+    }
 
+    // Find the closest scrollable parent (excluding the body/html)
+    let container = element.parentElement;
+    while (container) {
+      const overflow = window.getComputedStyle(container).overflowY;
+      if (overflow === 'auto' || overflow === 'scroll') {
+        break;
+      }
+      container = container.parentElement;
+    }
+
+    if (container) {
+      // Scroll the container to show the element
+      const elementRect = element.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const offset = elementRect.top - containerRect.top + container.scrollTop;
+      container.scrollTo({
+        top: offset - 20, // small padding
+        behavior: 'smooth',
+      });
+    } else {
+      // Fallback: use window scrollIntoView
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
   return (
     <Box
       sx={{
@@ -120,6 +149,7 @@ export default function ResumePage() {
               setResume={setResume}
               suggestions={suggestions}
               setSuggestions={setSuggestions}
+              onScrollToPath={scrollToPath}
             />
           </Box>
         )}

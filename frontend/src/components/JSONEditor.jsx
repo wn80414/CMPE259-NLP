@@ -105,6 +105,46 @@ const JSONEditor = ({
             </Grid>
           </Grid>
         </Paper>
+
+        {/* EXPERIENCE */}
+        <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" fontWeight="600">Work Experience</Typography>
+            <Button variant="outlined" size="small" onClick={() => addArrayItem('experience', { company: '', role: '', bullets: [] })}>
+              + Add Role
+            </Button>
+          </Box>
+
+          <Stack spacing={4} divider={<Divider />}>
+            {(resume.experience || []).map((exp, idx) => (
+              <Box key={idx} id={`experience.${idx}`}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                  <Button color="error" size="small" onClick={() => removeArrayItem('experience', idx)}>Delete</Button>
+                </Box>
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={12} md={6}>
+                    <TextField fullWidth size="small" label="Company" value={exp.company || ''}
+                      onChange={(e) => updateArrayItem('experience', idx, 'company', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField fullWidth size="small" label="Role" value={exp.role || ''}
+                      onChange={(e) => updateArrayItem('experience', idx, 'role', e.target.value)} />
+                  </Grid>
+                </Grid>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={4}
+                  maxRows={10}
+                  placeholder={"– Led development of...\n– Reduced latency by..."}
+                  value={exp.bullets?.join('\n') || ''}
+                  onChange={(e) => updateArrayItem('experience', idx, 'bullets', e.target.value.split('\n'))}
+                />
+              </Box>
+            ))}
+          </Stack>
+        </Paper>
+
         {/* PROJECTS */}
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', minHeight: '200px' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -115,13 +155,17 @@ const JSONEditor = ({
           </Box>
           <Stack spacing={4} divider={<Divider />}>
             {(resume.projects || []).map((proj, idx) => (
-              <Box key={idx}>
+              <Box key={idx} id={`projects.${idx}`}>   {/* ← add id */}
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                   <Button color="error" size="small" onClick={() => removeArrayItem('projects', idx)}>Delete</Button>
                 </Box>
                 <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={12} md={6}><TextField fullWidth size="small" label="Name" value={proj.name || ''} onChange={(e) => updateArrayItem('projects', idx, 'name', e.target.value)} /></Grid>
-                  <Grid item xs={12} md={6}><TextField fullWidth size="small" label="Tech Stack" value={proj.tech_stack?.join(', ') || ''} onChange={(e) => updateArrayItem('projects', idx, 'tech_stack', e.target.value.split(',').map(s => s.trim()))} /></Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField fullWidth size="small" label="Name" value={proj.name || ''} onChange={(e) => updateArrayItem('projects', idx, 'name', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField fullWidth size="small" label="Tech Stack" value={proj.tech_stack?.join(', ') || ''} onChange={(e) => updateArrayItem('projects', idx, 'tech_stack', e.target.value.split(',').map(s => s.trim()))} />
+                  </Grid>
                 </Grid>
                 <TextField
                   fullWidth
@@ -137,35 +181,7 @@ const JSONEditor = ({
           </Stack>
         </Paper>
 
-        {/* EXPERIENCE */}
-        <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', minHeight: '200px' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" fontWeight="600">Work Experience</Typography>
-            <Button variant="outlined" size="small" onClick={() => addArrayItem('experience', { company: '', role: '', bullets: [] })}>+ Add Role</Button>
-          </Box>
-          <Stack spacing={4} divider={<Divider />}>
-            {(resume.experience || []).map((exp, idx) => (
-              <Box key={idx}>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                  <Button color="error" size="small" onClick={() => removeArrayItem('experience', idx)}>Delete</Button>
-                </Box>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={12} md={6}><TextField fullWidth size="small" label="Company" value={exp.company || ''} onChange={(e) => updateArrayItem('experience', idx, 'company', e.target.value)} /></Grid>
-                  <Grid item xs={12} md={6}><TextField fullWidth size="small" label="Role" value={exp.role || ''} onChange={(e) => updateArrayItem('experience', idx, 'role', e.target.value)} /></Grid>
-                </Grid>
-                <TextField
-                  fullWidth
-                  multiline
-                  minRows={4}
-                  maxRows={10}
-                  placeholder={"– Led development of...\n– Reduced latency by..."}
-                  value={exp.bullets?.join('\n') || ''}
-                  onChange={(e) => updateArrayItem('experience', idx, 'bullets', e.target.value.split('\n'))}
-                />
-              </Box>
-            ))}
-          </Stack>
-        </Paper>
+
 
         {/* TECHNICAL SKILLS */}
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
@@ -226,7 +242,7 @@ const JSONEditor = ({
               if (!skills.length) return null;
 
               return (
-                <Box key={cat} sx={{ mb: 2 }}>
+                <Box key={cat} id={`skills.${cat}`} sx={{ mb: 2 }}>   {/* ← add id */}
                   <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
                     {cat.toUpperCase().replace('_', ' / ')}
                   </Typography>

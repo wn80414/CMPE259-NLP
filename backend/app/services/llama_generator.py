@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.prompt_builder import build_resume_prompt, MODE_DESCRIPTIONS
 
 client = InferenceClient(
-    model="meta-llama/Meta-Llama-3-8B-Instruct",
+    model="meta-llama/Llama-3.1-70B-Instruct",
     token=settings.hf_token,
     timeout=60
 )

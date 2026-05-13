@@ -28,7 +28,7 @@ Return ONLY valid JSON:
 
 {
   "intent": "resume_engine | general_chat",
-  "sub_intent": "rewrite | tailor | ats | critique | match | null",
+  "sub_intent": "rewrite | critique",
 
   "needs_job_context": true,
   "job_query": "Google Software Engineer III",
@@ -38,17 +38,17 @@ Return ONLY valid JSON:
 }
 
 Rules:
-- If user mentions job role (QA, SWE, data engineer) → resume_engine + sub_intent = tailor
+- If user mentions job role (SRE, QA, SWE, data engineer) → resume_engine + sub_intent = tailor
 - If user asks improve resume → resume_engine + sub_intent = rewrite
-- If user asks ATS keywords → resume_engine + sub_intent = ats
-- If user compares resume to jobs → job_search OR resume_engine + match (prefer resume_engine)
+- If user asks ATS keywords → resume_engine + sub_intent = rewrite
 - No markdown. JSON only.
+
 """
             },
             {"role": "user", "content": message}
         ],
         max_tokens=200,
-        temperature=0.1
+        temperature=0.01
     )
 
     content = response.choices[0].message["content"]
@@ -58,7 +58,7 @@ Rules:
     except Exception:
         return {
             "intent": "general_chat",
-            "sub_intent": None,
+            "sub_intent": "domain_error",
             "confidence": 0.5,
             "reason": "parse_failed_fallback"
         }

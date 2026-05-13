@@ -1,5 +1,6 @@
 import re
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from huggingface_hub import InferenceClient
 from app.core.config import settings
 
@@ -8,8 +9,8 @@ client = InferenceClient(
     token=settings.hf_token
 )
 
+# ---------- helpers ----------
 def _call_llm(system_prompt: str, user_text: str, max_tokens=800, temperature=0.1) -> str:
-    """Helper to make a single LLM call and return the raw text."""
     response = client.chat_completion(
         messages=[
             {"role": "system", "content": system_prompt},
@@ -20,6 +21,23 @@ def _call_llm(system_prompt: str, user_text: str, max_tokens=800, temperature=0.
     )
     return response.choices[0].message["content"]
 
+def safe_parse_llm(text: str, expected_keys: list = None):
+    try:
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+        if match:
+            text = match.group(1)
+        text = text.strip()
+        parsed = json.loads(text)
+        if expected_keys:
+            for key in expected_keys:
+                if key not in parsed:
+                    parsed[key] = "" if isinstance({}.get(key), str) else []
+        return parsed
+    except json.JSONDecodeError:
+        print(f"Failed to parse: {text[:200]}")
+        return {} if not expected_keys else {k: "" for k in expected_keys}
+
+# ---------- Independent extraction functions (no context) ----------
 def _extract_contact(text: str) -> dict:
     prompt = f"""Extract name, email, phone, LinkedIn, and GitHub from this resume.
 Return ONLY valid JSON with these keys: name, email, phone, linkedin, github.
@@ -31,12 +49,11 @@ Resume:
     raw = _call_llm("Return ONLY valid JSON. No markdown.", prompt)
     return safe_parse_llm(raw, expected_keys=["name", "email", "phone", "linkedin", "github"])
 
-def _extract_education(text: str, contact: dict) -> list:
+
+def _extract_education(text: str) -> list:
     prompt = f"""Extract education entries from this resume.
 Return a JSON array of objects with: school, degree, location, graduation_date, gpa, coursework (array of strings).
 If missing, return an empty array.
-
-Contact info: {json.dumps(contact)}
 
 Resume:
 {text}
@@ -45,13 +62,11 @@ Resume:
     result = safe_parse_llm(raw)
     return result if isinstance(result, list) else []
 
-def _extract_experience(text: str, contact: dict, education: list) -> list:
+
+def _extract_experience(text: str) -> list:
     prompt = f"""Extract work experience entries from this resume.
 Return a JSON array of objects with: company, role, location, start_date, end_date, bullets (array of strings).
 If missing, return an empty array.
-
-Contact: {json.dumps(contact)}
-Education: {json.dumps(education)}
 
 Resume:
 {text}
@@ -60,12 +75,11 @@ Resume:
     result = safe_parse_llm(raw)
     return result if isinstance(result, list) else []
 
-def _extract_projects(text: str, context: dict) -> list:
+
+def _extract_projects(text: str) -> list:
     prompt = f"""Extract technical projects from this resume.
 Return a JSON array of objects with: name, tech_stack (array of strings), bullets (array of strings).
 If missing, return an empty array.
-
-Current data: {json.dumps(context)}
 
 Resume:
 {text}
@@ -74,12 +88,11 @@ Resume:
     result = safe_parse_llm(raw)
     return result if isinstance(result, list) else []
 
-def _extract_skills(text: str, context: dict) -> dict:
+
+def _extract_skills(text: str) -> dict:
     prompt = f"""Extract technical skills from this resume into categories: languages, cloud, ml_ai, tools.
 Return a JSON object with those four keys, each an array of strings.
 If missing, return empty arrays.
-
-Current data: {json.dumps(context)}
 
 Resume:
 {text}
@@ -88,11 +101,10 @@ Resume:
     result = safe_parse_llm(raw, expected_keys=["languages", "cloud", "ml_ai", "tools"])
     return result if isinstance(result, dict) else {"languages": [], "cloud": [], "ml_ai": [], "tools": []}
 
-def _extract_awards(text: str, context: dict) -> list:
+
+def _extract_awards(text: str) -> list:
     prompt = f"""Extract awards/honors from this resume as an array of strings.
 If missing, return an empty array.
-
-Current data: {json.dumps(context)}
 
 Resume:
 {text}
@@ -101,51 +113,38 @@ Resume:
     result = safe_parse_llm(raw)
     return result if isinstance(result, list) else []
 
-def safe_parse_llm(text: str, expected_keys: list = None):
-    """Parse JSON from LLM output, with fallback."""
-    try:
-        # Remove backtick fences
-        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
-        if match:
-            text = match.group(1)
-        text = text.strip()
-        parsed = json.loads(text)
-        if expected_keys:
-            # Ensure all expected keys exist
-            for key in expected_keys:
-                if key not in parsed:
-                    parsed[key] = "" if isinstance({}.get(key), str) else []
-        return parsed
-    except json.JSONDecodeError:
-        print(f"Failed to parse: {text[:200]}")
-        return {} if not expected_keys else {k: "" for k in expected_keys}
 
+# ---------- Main parallel parser ----------
 def parse_resume(text: str) -> dict:
-    """Main function – chains prompts sequentially."""
-    print("Step 1/6: Extracting contact info...")
-    contact = _extract_contact(text)
-    
-    print("Step 2/6: Extracting education...")
-    education = _extract_education(text, contact)
-    
-    print("Step 3/6: Extracting experience...")
-    experience = _extract_experience(text, contact, education)
-    
-    context = {**contact, "education": education, "experience": experience}
-    
-    print("Step 4/6: Extracting projects...")
-    projects = _extract_projects(text, context)
-    context["projects"] = projects
-    
-    print("Step 5/6: Extracting skills...")
-    skills = _extract_skills(text, context)
-    context["skills"] = skills
-    
-    print("Step 6/6: Extracting awards...")
-    awards = _extract_awards(text, context)
-    context["awards"] = awards
-    
-    # Build final output matching the original schema
+    """
+    Extract all sections in parallel using independent prompts.
+    Returns full resume dictionary matching original schema.
+    """
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        futures = {
+            executor.submit(_extract_contact, text): "contact",
+            executor.submit(_extract_education, text): "education",
+            executor.submit(_extract_experience, text): "experience",
+            executor.submit(_extract_projects, text): "projects",
+            executor.submit(_extract_skills, text): "skills",
+            executor.submit(_extract_awards, text): "awards",
+        }
+        results = {}
+        for future in as_completed(futures):
+            key = futures[future]
+            try:
+                results[key] = future.result()
+            except Exception as e:
+                print(f"Error extracting {key}: {e}")
+                results[key] = None
+
+    contact = results.get("contact", {})
+    education = results.get("education", []) or []
+    experience = results.get("experience", []) or []
+    projects = results.get("projects", []) or []
+    skills = results.get("skills", {}) or {}
+    awards = results.get("awards", []) or []
+
     return {
         "name": contact.get("name", ""),
         "email": contact.get("email", ""),

@@ -35,38 +35,22 @@ function clearStoredMessages() {
 function normalizeBackendResponse(data) {
   if (!data) return { type: "error", response: "Empty response" };
 
-  if (data.type === "resume_engine") {
+  if (data.mode && data.changes !== undefined) {
     return {
       type: "resume_engine",
       mode: data.mode,
-      summary: data.data?.summary,
-      changes: data.data?.changes || [],
-      suggestions: data.data?.suggestions || [], // <-- NEW
+      summary: data.summary || "",
+      changes: data.changes,
+      suggestions: data.suggestions || [],
       meta: data.meta || {},
       response: null,
     };
   }
-  if (data.type === "resume_suggestions") {
-    return {
-      type: "resume_engine",
-      mode: "general",
-      summary: data.summary,
-      changes: data.changes || [],
-      suggestions: [],
-      response: null,
-    };
+
+  if (data.response) {
+    return { type: "chat", response: data.response };
   }
-  if (data.mode && data.changes) {
-    return {
-      type: "resume_engine",
-      mode: data.mode,
-      summary: data.summary,
-      changes: data.changes,
-      suggestions: [],
-      response: null,
-    };
-  }
-  if (data.response) return { type: "chat", response: data.response };
+
   return { type: "chat", response: "Unsupported format" };
 }
 
@@ -98,13 +82,24 @@ function setValueAtPath(obj, path, newValue) {
   const keys = path.split(".");
   if (keys.length === 0) return newValue;
   const [first, ...rest] = keys;
+
   if (Array.isArray(obj)) {
     const copy = [...obj];
-    copy[parseInt(first)] = rest.length === 0
+    const index = parseInt(first);
+    copy[index] = rest.length === 0
       ? newValue
-      : setValueAtPath(copy[parseInt(first)], rest.join("."), newValue);
+      : setValueAtPath(copy[index], rest.join("."), newValue);
     return copy;
   } else if (obj && typeof obj === "object") {
+    // When we're about to set the final value, check if the property is an array
+    if (rest.length === 0) {
+      const currentValue = obj[first];
+      // If target is an array and newValue is a string, split it
+      if (Array.isArray(currentValue) && typeof newValue === 'string') {
+        newValue = newValue.split(',').map(s => s.trim());
+      }
+      return { ...obj, [first]: newValue };
+    }
     return {
       ...obj,
       [first]: rest.length === 0 ? newValue : setValueAtPath(obj[first], rest.join("."), newValue),
@@ -112,7 +107,6 @@ function setValueAtPath(obj, path, newValue) {
   }
   return obj;
 }
-
 // ---------------- COMPONENT ---------------- //
 export default function AIChat({ resume, setResume, setSuggestions }) {
   const [messages, setMessages] = useState(loadMessages);
@@ -142,7 +136,7 @@ export default function AIChat({ resume, setResume, setSuggestions }) {
 
   const handleAcceptChange = (change, msgIndex) => {
     if (!setResume) return;
-    console.log("✅ Accepting change with path:", change._path);
+    console.log(" Accepting change with path:", change._path);
 
     const { _path, new_text } = change;
     if (!_path || !new_text) return;
@@ -185,7 +179,7 @@ export default function AIChat({ resume, setResume, setSuggestions }) {
 
     try {
       const raw = await sendChatRequest(trimmed, resume);
-      console.log("🔵 RAW BACKEND RESPONSE:", raw);
+      console.log("AI CHAT RESPONSE:", raw);
 
       const normalized = normalizeBackendResponse(raw);
 

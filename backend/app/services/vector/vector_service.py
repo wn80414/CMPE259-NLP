@@ -107,7 +107,7 @@ class VectorService:
 
         for category, items in skills.items():
             if not isinstance(items, list) or len(items) == 0:
-                print(f"  ⏭️  Skipping empty/non-list category: '{category}'")
+                print(f"    Skipping empty/non-list category: '{category}'")
                 continue
 
             # Content with category name for context

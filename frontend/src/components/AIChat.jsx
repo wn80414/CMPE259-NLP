@@ -464,7 +464,7 @@ const sendMessage = async () => {
                                 color="text.secondary"
                                 sx={{ fontSize: 12, cursor: "help", flex: 1 }}
                               >
-                                📍 {friendlyPath(change._path, resume)}
+                                {friendlyPath(change._path, resume)}
                               </Typography>
                             </Tooltip>
 

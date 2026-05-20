@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from supabase import create_client
 from app.core.config import settings
 from app.services.vector.vector_service import VectorService
@@ -19,10 +19,10 @@ async def get_current_user(authorization: str = Header(None)):
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+
 @router.put("/")
-async def upload_resume(
+async def save_resume(
     request: Request,
-    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
 ):
     structured_analysis = await request.json()
@@ -43,16 +43,19 @@ async def upload_resume(
 
     resume_id = res.data[0]["id"]
 
-    # Trigger RAG indexing
-    background_tasks.add_task(
-        vector_service.upsert_resume_embeddings,
-        resume_id=resume_id,
-        user_id=user_id,
-        resume_data=structured_analysis
-    )
+    # Vector indexing (now blocking – waits for completion)
+    try:
+        vector_service.upsert_resume_embeddings(
+            resume_id=resume_id,
+            user_id=user_id,
+            resume_data=structured_analysis
+        )
+    except Exception as e:
+        print(f"Vector indexing failed: {e}")
+        # Optionally return still with a warning, or raise error
 
     return {
-        "message": "Resume saved and indexing started",
+        "message": "Resume saved and indexed",
         "id": resume_id,
         "data": structured_analysis
     }

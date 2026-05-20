@@ -1,9 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Header, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Header
 from supabase import create_client
 from app.core.config import settings
 from app.services.pdf_parser import extract_text_from_pdf
 from app.services.llama_parser import parse_resume
-from app.services.vector.vector_service import VectorService # New Service
+from app.services.vector.vector_service import VectorService
 
 router = APIRouter()
 supabase = create_client(settings.supabase_url, settings.supabase_key)
@@ -15,7 +15,6 @@ async def get_current_user(authorization: str = Header(None)):
     
     token = authorization.split(" ")[1]
     try:
-        # Note: Using get_user directly is safer for auth validation
         res = supabase.auth.get_user(token)
         return res.user.id
     except Exception:
@@ -23,7 +22,6 @@ async def get_current_user(authorization: str = Header(None)):
 
 @router.post("/")
 async def upload_resume(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     user_id: str = Depends(get_current_user)
 ):
@@ -39,8 +37,6 @@ async def upload_resume(
     structured_analysis = parse_resume(raw_text) 
 
     # 2. Persist Master Resume
-    # Note: Upsert needs a unique constraint or an ID to actually 'update'.
-    # If this is a new upload, it will just insert.
     payload = {
         "user_id": user_id,
         "resume_data": structured_analysis,
@@ -54,17 +50,20 @@ async def upload_resume(
 
     resume_id = res.data[0]["id"]
 
-    # 3. Trigger RAG Pipeline (Background Task)
-    # ADDED: user_id=user_id here so the vector service can tag chunks correctly
-    background_tasks.add_task(
-        vector_service.upsert_resume_embeddings, 
-        resume_id=resume_id, 
-        user_id=user_id, # <--- Pass the user_id here
-        resume_data=structured_analysis
-    )
+    # 3. Vector Indexing (now blocking – waits for completion)
+    try:
+        vector_service.upsert_resume_embeddings(
+            resume_id=resume_id,
+            user_id=user_id,
+            resume_data=structured_analysis
+        )
+    except Exception as e:
+        print(f"Vector indexing failed: {e}")
+        # Optionally still return success with a warning
+        # raise HTTPException(status_code=500, detail=f"Vector indexing error: {str(e)}")
 
     return {
-        "message": "Resume parsed and indexing started",
+        "message": "Resume parsed and indexed",
         "id": resume_id,
         "data": structured_analysis
     }

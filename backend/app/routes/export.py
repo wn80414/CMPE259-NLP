@@ -81,7 +81,6 @@ def build_pdf(resume: dict) -> BytesIO:
 
     styles = getSampleStyleSheet()
 
-    # ---------------- Title (compact)
     title = ParagraphStyle(
         "Title",
         parent=styles["Heading1"],
@@ -90,7 +89,6 @@ def build_pdf(resume: dict) -> BytesIO:
         leading=20,
     )
 
-    # ---------------- Section headers (tight like Jake template)
     section = ParagraphStyle(
         "Section",
         parent=styles["Heading2"],
@@ -100,7 +98,6 @@ def build_pdf(resume: dict) -> BytesIO:
         textColor=colors.black,
     )
 
-    # ---------------- Body
     normal = ParagraphStyle(
         "Normal",
         parent=styles["Normal"],
@@ -109,90 +106,79 @@ def build_pdf(resume: dict) -> BytesIO:
         spaceAfter=2,
     )
 
+    right = ParagraphStyle(
+        "Right",
+        parent=normal,
+        fontSize=9,
+        textColor=colors.black,           # was grey – now black
+        alignment=2,
+        spaceAfter=2,
+    )
+
+    sub = ParagraphStyle(
+        "Sub",
+        parent=normal,
+        fontSize=9,
+        textColor=colors.black,           # was grey – now black
+        spaceAfter=2,
+    )
+
     story = []
 
-    # =========================================================
-    # HEADER (center-like compact block)
-    # =========================================================
-    story.append(Paragraph(resume["name"], title))
-
+    # HEADER
+    story.append(Paragraph(resume.get("name", ""), title))
     contact = " | ".join(filter(None, [
         resume.get("email"),
         resume.get("phone"),
         resume.get("linkedin"),
         resume.get("github")
     ]))
-
     story.append(Paragraph(clean_text(contact), normal))
     story.append(Spacer(1, 8))
 
-    # =========================================================
     # SUMMARY
-    # =========================================================
-    if resume["summary"]:
+    if resume.get("summary"):
         story.append(Paragraph("SUMMARY", section))
         story.append(Paragraph(clean_text(resume["summary"]), normal))
-    # =========================================================
-    # EXPERIENCE (compact, right-aligned dates)
-    # =========================================================
-    if resume["experience"]:
+
+    # EXPERIENCE
+    if resume.get("experience"):
         story.append(Paragraph("EXPERIENCE", section))
-
         for exp in resume["experience"]:
-            role = clean_text(exp.get("role"))
-            company = clean_text(exp.get("company"))
-            start = clean_text(exp.get("start_date"))
-            end = clean_text(exp.get("end_date"))
+            company = clean_text(exp.get("company", ""))
+            role = clean_text(exp.get("role", ""))
+            start = clean_text(exp.get("start_date", ""))
+            end = clean_text(exp.get("end_date", ""))
+            loc = clean_text(exp.get("location", ""))
 
-            # ----------------------------------------------------
-            # LINE 1: ROLE - COMPANY (like project title)
-            # ----------------------------------------------------
-            story.append(
-                Paragraph(
-                    f"<b>{role}</b> - {company}",
-                    normal
-                )
-            )
+            story.append(Paragraph(f"<b>{company}</b> — {role}", normal))
 
-            # ----------------------------------------------------
-            # LINE 2: DATES (INDENTED RIGHT STYLE)
-            # ----------------------------------------------------
-            story.append(
-                Paragraph(
-                    f"<font size=9>{start} - {end}</font>",
-                    ParagraphStyle(
-                        "date",
-                        parent=normal,
-                        alignment=2,  # RIGHT
-                        textColor=colors.grey,
-                        fontSize=9,
-                        spaceAfter=2,
-                    )
-                )
-            )
+            # Location and dates on same line (right-aligned)
+            date_str = f"{start} – {end}" if start or end else ""
+            parts = [loc, date_str]
+            line = ", ".join(filter(None, parts))
+            if line:
+                story.append(Paragraph(line, right))
 
-            # ----------------------------------------------------
-            # BULLETS (SAME AS PROJECTS)
-            # ----------------------------------------------------
             bullets = clean_list(exp.get("bullets", []))
-
             if bullets:
                 story.append(ListFlowable(
                     [ListItem(Paragraph(b, normal)) for b in bullets],
                     bulletType="bullet",
                     leftIndent=14,
                 ))
-
             story.append(Spacer(1, 6))
 
-    # =========================================================
-    # PROJECTS (compact)
-    # =========================================================
-    if resume["projects"]:
+    # PROJECTS (inline tech stack)
+    if resume.get("projects"):
         story.append(Paragraph("PROJECTS", section))
-
         for proj in resume["projects"]:
-            story.append(Paragraph(f"<b>{clean_text(proj.get('name'))}</b>", normal))
+            name = clean_text(proj.get("name", ""))
+            tech_stack = clean_list(proj.get("tech_stack", []))
+            display_name = name
+            if tech_stack:
+                display_name += f" ({', '.join(tech_stack)})"
+            story.append(Paragraph(f"<b>{display_name}</b>", normal))
 
             bullets = clean_list(proj.get("bullets", []))
             if bullets:
@@ -201,34 +187,71 @@ def build_pdf(resume: dict) -> BytesIO:
                     bulletType="bullet",
                     leftIndent=14,
                 ))
+            story.append(Spacer(1, 6))
 
-    # =========================================================
-    # EDUCATION (tight)
-    # =========================================================
-    if resume["education"]:
+    # EDUCATION
+    if resume.get("education"):
         story.append(Paragraph("EDUCATION", section))
-
         for edu in resume["education"]:
-            line = f"{clean_text(edu.get('degree'))} - {clean_text(edu.get('school'))}"
-            story.append(Paragraph(line, normal))
+            school = clean_text(edu.get("school", ""))
+            degree = clean_text(edu.get("degree", ""))
+            loc = clean_text(edu.get("location", ""))
+            grad = clean_text(edu.get("graduation_date", ""))
+            gpa = clean_text(edu.get("gpa", ""))
+            coursework = clean_list(edu.get("coursework", []))
 
-    # =========================================================
-    # SKILLS (inline, compact)
-    # =========================================================
-    if resume["skills"]:
+            story.append(Paragraph(f"<b>{school}</b> — {degree}", normal))
+
+            line_parts = []
+            if loc:
+                line_parts.append(loc)
+            if grad:
+                line_parts.append(grad)
+            if gpa:
+                line_parts.append(f"GPA: {gpa}")
+            if line_parts:
+                story.append(Paragraph(", ".join(line_parts), sub))
+
+            if coursework:
+                story.append(
+                    Paragraph(f"<b>Coursework:</b> {', '.join(coursework)}", sub)
+                )
+            story.append(Spacer(1, 6))
+
+    # SKILLS (custom labels, no gray)
+    if resume.get("skills"):
         story.append(Paragraph("SKILLS", section))
+        label_map = {
+            "languages": "Languages",
+            "cloud": "Cloud",
+            "ml_ai": "ML/AI",
+            "tools": "Technologies",
+        }
+        skill_lines = []
+        for key in ["languages", "cloud", "ml_ai", "tools"]:
+            items = resume["skills"].get(key, [])
+            if items:
+                label = label_map.get(key, key.capitalize())
+                skill_lines.append(
+                    f"<b>{label}:</b> {', '.join(clean_list(items))}"
+                )
+        if skill_lines:
+            story.append(Paragraph("<br/>".join(skill_lines), normal))
 
-        skill_text = ", ".join(
-            f"{clean_text(k)}: {', '.join(clean_list(v))}"
-            for k, v in resume["skills"].items()
-        )
-
-        story.append(Paragraph(skill_text, normal))
+    # AWARDS
+    if resume.get("awards"):
+        story.append(Paragraph("AWARDS", section))
+        awards = clean_list(resume.get("awards", []))
+        if awards:
+            story.append(ListFlowable(
+                [ListItem(Paragraph(a, normal)) for a in awards],
+                bulletType="bullet",
+                leftIndent=14,
+            ))
 
     doc.build(story)
     buffer.seek(0)
     return buffer
-
 
 # ------------------------------------------------------------
 # ENDPOINT

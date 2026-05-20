@@ -27,3 +27,5 @@ typing-extensions
 reportlab
 
 numpy
+
+openai

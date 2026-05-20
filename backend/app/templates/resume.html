@@ -73,11 +73,11 @@ body {
     font-style: italic;
     font-size: 11.5px;
     margin-top: 1px;
-    color: #333;
+    color: #000;
 }
 
 /* --------------------------------------------------
-   BULLETS
+   BULLETS & INLINE LISTS
 -------------------------------------------------- */
 ul {
     margin: 2px 0 6px 14px;
@@ -93,6 +93,11 @@ li {
 -------------------------------------------------- */
 .block {
     margin-bottom: 6px;
+}
+
+.coursework {
+    font-size: 11px;
+    margin-top: 1px;
 }
 </style>
 
@@ -114,7 +119,7 @@ li {
 </div>
 
 <!-- ==================================================
-     SUMMARY
+     SUMMARY (optional)
 ================================================== -->
 {% if resume.summary %}
 <div class="section-title">Summary</div>
@@ -180,7 +185,7 @@ li {
 {% endif %}
 
 <!-- ==================================================
-     EDUCATION
+     EDUCATION (including coursework)
 ================================================== -->
 {% if resume.education %}
 <div class="section-title">Education</div>
@@ -198,23 +203,41 @@ li {
     </div>
 
     <div class="sub">
-        {{ edu.location }} {% if edu.gpa %} | GPA: {{ edu.gpa }}{% endif %}
+        {{ edu.location }} {% if edu.gpa and edu.gpa != "" %} | GPA: {{ edu.gpa }}{% endif %}
     </div>
+
+    {% if edu.coursework and edu.coursework|length > 0 %}
+    <div class="coursework">
+        <b>Coursework:</b> {{ edu.coursework | join(', ') }}
+    </div>
+    {% endif %}
 
 </div>
 {% endfor %}
 {% endif %}
 
 <!-- ==================================================
-     SKILLS
+     SKILLS (custom labels)
 ================================================== -->
 {% if resume.skills %}
 <div class="section-title">Skills</div>
 
 <div class="block">
-{% for category, skills in resume.skills.items() %}
-<b>{{ category }}:</b> {{ skills | join(', ') }}<br>
-{% endfor %}
+    {% if resume.skills.get('languages') %}
+    <b>Languages:</b> {{ resume.skills['languages'] | join(', ') }}<br>
+    {% endif %}
+
+    {% if resume.skills.get('cloud') %}
+    <b>Cloud:</b> {{ resume.skills['cloud'] | join(', ') }}<br>
+    {% endif %}
+
+    {% if resume.skills.get('ml_ai') %}
+    <b>ML/AI:</b> {{ resume.skills['ml_ai'] | join(', ') }}<br>
+    {% endif %}
+
+    {% if resume.skills.get('tools') %}
+    <b>Technologies:</b> {{ resume.skills['tools'] | join(', ') }}<br>
+    {% endif %}
 </div>
 {% endif %}
 

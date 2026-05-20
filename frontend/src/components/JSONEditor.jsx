@@ -37,7 +37,6 @@ const JSONEditor = ({
   mode = '',
 }) => {
   const [activeSkillCat, setActiveSkillCat] = useState('');
-  // Local copy of suggestions so we can remove accepted/rejected ones
   const [localSuggestions, setLocalSuggestions] = useState(propSuggestions);
 
   // Sync when parent passes new suggestions
@@ -45,7 +44,7 @@ const JSONEditor = ({
     setLocalSuggestions(propSuggestions);
   }, [propSuggestions]);
 
-  // Editor helpers (unchanged)
+  // Editor helpers
   const updateField = (path, value) => setResume(prev => ({ ...prev, [path]: value }));
   const updateNestedField = (category, value) => setResume(prev => ({
     ...prev,
@@ -69,7 +68,6 @@ const JSONEditor = ({
   const handleAcceptChange = (change) => {
     const { old_text, new_text } = change;
     if (!old_text || !new_text) return;
-
     setResume((prev) => replaceTextInResume(prev, old_text, new_text));
     setLocalSuggestions((prev) => prev.filter((_, i) => i !== change._idx));
   };
@@ -80,14 +78,15 @@ const JSONEditor = ({
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
-      <Stack spacing={4} sx={{ maxWidth: '900px', margin: '0 auto', pb: 10 }}>
+      <Stack spacing={5} sx={{ maxWidth: '900px', margin: '0 auto', pb: 10 }}>
         {/* Title */}
         <Typography variant="h4" fontWeight="800">Resume Builder</Typography>
 
-        {/* BASIC INFO (unchanged – copy from your existing code) */}
+        {/* BASIC INFO */}
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <Typography variant="h6" fontWeight="600" mb={3}>General Information</Typography>
-          <Grid container spacing={3}>
+          <Typography variant="h6" fontWeight="600" mb={4}>General Information</Typography>
+          <br></br>
+          <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
               <TextField fullWidth label="Full Name" value={resume.name || ''} onChange={(e) => updateField('name', e.target.value)} />
             </Grid>
@@ -106,22 +105,89 @@ const JSONEditor = ({
           </Grid>
         </Paper>
 
+        {/* EDUCATION */}
+        <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Typography variant="h6" fontWeight="600">Education</Typography>
+            <Button variant="outlined" size="small" onClick={() => addArrayItem('education', {
+              school: '',
+              degree: '',
+              location: '',
+              graduation_date: '',
+              gpa: '',
+              coursework: []
+            })}>
+              + Add Education
+            </Button>
+          </Box>
+
+          <Stack spacing={5} divider={<Divider />}>
+            {(resume.education || []).map((edu, idx) => (
+              <Box key={idx} id={`education.${idx}`}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                  <Button color="error" size="small" onClick={() => removeArrayItem('education', idx)}>Delete</Button>
+                </Box>
+                <Grid container spacing={4} sx={{ mb: 2 }}>
+                  <Grid item xs={12} md={6}>
+                    <TextField fullWidth size="small" label="School" value={edu.school || ''}
+                      onChange={(e) => updateArrayItem('education', idx, 'school', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField fullWidth size="small" label="Degree" value={edu.degree || ''}
+                      onChange={(e) => updateArrayItem('education', idx, 'degree', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField fullWidth size="small" label="Location" value={edu.location || ''}
+                      onChange={(e) => updateArrayItem('education', idx, 'location', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField fullWidth size="small" label="Graduation Date" value={edu.graduation_date || ''}
+                      onChange={(e) => updateArrayItem('education', idx, 'graduation_date', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField fullWidth size="small" label="GPA" value={edu.gpa || ''}
+                      onChange={(e) => updateArrayItem('education', idx, 'gpa', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField fullWidth size="small" label="Coursework (comma separated)" 
+                      value={edu.coursework?.join(', ') || ''}
+                      onChange={(e) => updateArrayItem('education', idx, 'coursework', e.target.value.split(',').map(s => s.trim()))}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            ))}
+            {(!resume.education || resume.education.length === 0) && (
+              <Box sx={{ py: 4, border: '2px dashed #e2e8f0', borderRadius: 2, textAlign: 'center' }}>
+                <Typography color="text.secondary">No education entries yet.</Typography>
+              </Box>
+            )}
+          </Stack>
+        </Paper>
+
         {/* EXPERIENCE */}
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Typography variant="h6" fontWeight="600">Work Experience</Typography>
-            <Button variant="outlined" size="small" onClick={() => addArrayItem('experience', { company: '', role: '', bullets: [] })}>
+            <Button variant="outlined" size="small" onClick={() => addArrayItem('experience', {
+              company: '',
+              role: '',
+              location: '',
+              start_date: '',
+              end_date: '',
+              bullets: []
+            })}>
               + Add Role
             </Button>
           </Box>
 
-          <Stack spacing={4} divider={<Divider />}>
+          <Stack spacing={5} divider={<Divider />}>
             {(resume.experience || []).map((exp, idx) => (
               <Box key={idx} id={`experience.${idx}`}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                   <Button color="error" size="small" onClick={() => removeArrayItem('experience', idx)}>Delete</Button>
                 </Box>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid container spacing={4} sx={{ mb: 2 }}>
                   <Grid item xs={12} md={6}>
                     <TextField fullWidth size="small" label="Company" value={exp.company || ''}
                       onChange={(e) => updateArrayItem('experience', idx, 'company', e.target.value)} />
@@ -129,6 +195,18 @@ const JSONEditor = ({
                   <Grid item xs={12} md={6}>
                     <TextField fullWidth size="small" label="Role" value={exp.role || ''}
                       onChange={(e) => updateArrayItem('experience', idx, 'role', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField fullWidth size="small" label="Location" value={exp.location || ''}
+                      onChange={(e) => updateArrayItem('experience', idx, 'location', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={6} md={4}>
+                    <TextField fullWidth size="small" label="Start Date" value={exp.start_date || ''}
+                      onChange={(e) => updateArrayItem('experience', idx, 'start_date', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={6} md={4}>
+                    <TextField fullWidth size="small" label="End Date" value={exp.end_date || ''}
+                      onChange={(e) => updateArrayItem('experience', idx, 'end_date', e.target.value)} />
                   </Grid>
                 </Grid>
                 <TextField
@@ -142,24 +220,29 @@ const JSONEditor = ({
                 />
               </Box>
             ))}
+            {(!resume.experience || resume.experience.length === 0) && (
+              <Box sx={{ py: 4, border: '2px dashed #e2e8f0', borderRadius: 2, textAlign: 'center' }}>
+                <Typography color="text.secondary">No experience entries yet.</Typography>
+              </Box>
+            )}
           </Stack>
         </Paper>
 
         {/* PROJECTS */}
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', minHeight: '200px' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Typography variant="h6" fontWeight="600">Technical Projects</Typography>
             <Button variant="contained" size="small" onClick={() => addArrayItem('projects', { name: '', tech_stack: [], bullets: [] })}>
               + Add Project
             </Button>
           </Box>
-          <Stack spacing={4} divider={<Divider />}>
+          <Stack spacing={5} divider={<Divider />}>
             {(resume.projects || []).map((proj, idx) => (
-              <Box key={idx} id={`projects.${idx}`}>   {/* ← add id */}
+              <Box key={idx} id={`projects.${idx}`}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                   <Button color="error" size="small" onClick={() => removeArrayItem('projects', idx)}>Delete</Button>
                 </Box>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid container spacing={4} sx={{ mb: 2 }}>
                   <Grid item xs={12} md={6}>
                     <TextField fullWidth size="small" label="Name" value={proj.name || ''} onChange={(e) => updateArrayItem('projects', idx, 'name', e.target.value)} />
                   </Grid>
@@ -178,14 +261,17 @@ const JSONEditor = ({
                 />
               </Box>
             ))}
+            {(!resume.projects || resume.projects.length === 0) && (
+              <Box sx={{ py: 4, border: '2px dashed #e2e8f0', borderRadius: 2, textAlign: 'center' }}>
+                <Typography color="text.secondary">No projects added yet.</Typography>
+              </Box>
+            )}
           </Stack>
         </Paper>
 
-
-
         {/* TECHNICAL SKILLS */}
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <Typography variant="h6" fontWeight="600" mb={3}>Technical Skills</Typography>
+          <Typography variant="h6" fontWeight="600" mb={4}>Technical Skills</Typography>
 
           {/* Category toggle buttons */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
@@ -233,7 +319,7 @@ const JSONEditor = ({
 
           {/* Overview chips */}
           <Divider sx={{ mb: 2 }} />
-          <Typography variant="subtitle2" fontWeight="600" gutterBottom>
+          <Typography variant="subtitle2" fontWeight="600" gutterBottom sx={{ mb: 1 }}>
             Current Skills Overview
           </Typography>
           <Box>
@@ -242,7 +328,7 @@ const JSONEditor = ({
               if (!skills.length) return null;
 
               return (
-                <Box key={cat} id={`skills.${cat}`} sx={{ mb: 2 }}>   {/* ← add id */}
+                <Box key={cat} id={`skills.${cat}`} sx={{ mb: 2 }}>
                   <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
                     {cat.toUpperCase().replace('_', ' / ')}
                   </Typography>
@@ -267,19 +353,19 @@ const JSONEditor = ({
 
         {/* AWARDS */}
         <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Typography variant="h6" fontWeight="600">Awards & Honors</Typography>
             <Button variant="contained" size="small" onClick={() => addArrayItem('awards', { title: '', date: '', description: '' })}>
               + Add Award
             </Button>
           </Box>
-          <Stack spacing={4} divider={<Divider />}>
+          <Stack spacing={5} divider={<Divider />}>
             {(resume.awards || []).map((award, idx) => (
               <Box key={idx}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
                   <Button color="error" size="small" onClick={() => removeArrayItem('awards', idx)}>Delete</Button>
                 </Box>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid container spacing={4} sx={{ mb: 2 }}>
                   <Grid item xs={12} md={6}><TextField fullWidth size="small" label="Title" value={award.title || ''} onChange={(e) => updateArrayItem('awards', idx, 'title', e.target.value)} /></Grid>
                   <Grid item xs={12} md={3}><TextField fullWidth size="small" label="Date" value={award.date || ''} onChange={(e) => updateArrayItem('awards', idx, 'date', e.target.value)} /></Grid>
                   <Grid item xs={12} md={3}>

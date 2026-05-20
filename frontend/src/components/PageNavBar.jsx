@@ -102,7 +102,7 @@ export default function PageNavBar({ chatOpen, setChatOpen, resume, setResume })
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   const handleUpload = async (e) => {
@@ -183,7 +183,7 @@ export default function PageNavBar({ chatOpen, setChatOpen, resume, setResume })
                 Saving
               </Box>
             ) : (
-              "Save to Vector Store"
+              "Recompile Vectors"
             )}
           </Button>
           <Button

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     frontend_port: int = 5173
     serpapi_key: str
     jsearch_api_key: str
+    openai_api_key: str
     class Config:
         env_file = ".env"
 

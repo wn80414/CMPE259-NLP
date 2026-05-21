@@ -1,8 +1,9 @@
+import json
 import re
 from difflib import SequenceMatcher
 from typing import List, Optional
 
-from openai import OpenAI
+from huggingface_hub import InferenceClient
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
@@ -10,218 +11,115 @@ from app.core.prompt_builder import (
     build_resume_prompt,
     MODE_DESCRIPTIONS
 )
-
-# =========================================================
-# OPENAI CLIENT
-# =========================================================
-
-client = OpenAI(
-    api_key=settings.openai_api_key
+client = InferenceClient(
+    model="meta-llama/Llama-3.1-70B-Instruct",
+    token=settings.hf_token,
+    timeout=60
 )
 
-# =========================================================
-# VALID PATHS
-# =========================================================
-
+# Regex to validate bullet-level paths (e.g., "experience.0.2", "projects.1.0")
 VALID_BULLET_PATH = re.compile(
     r'^(experience|projects)\.\d+\.bullets\.\d+$|^skills\.\w+$'
 )
 
-# =========================================================
-# PYDANTIC MODELS
-# =========================================================
-
+# Pydantic models
 class Change(BaseModel):
     old_text: str
     new_text: str
     path: Optional[str] = None
-
 
 class Suggestion(BaseModel):
     old_text: str
     suggestion: str
     path: Optional[str] = None
 
-
 class ResumeResponse(BaseModel):
     changes: List[Change] = Field(default_factory=list)
     suggestions: List[Suggestion] = Field(default_factory=list)
 
-# =========================================================
-# OPENAI CALL
-# =========================================================
-
-def call_llm(prompt: str) -> ResumeResponse:
-    """
-    Call OpenAI and return validated Pydantic object.
-    """
-
-    response = client.beta.chat.completions.parse(
-        model="gpt-4.1-mini",
-        temperature=0.2,
-        max_tokens=1500,
+def call_llm(prompt: str) -> str:
+    """Make the API call and return raw text."""
+    response = client.chat_completion(
         messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
+            {"role": "system", "content": "You are a helpful resume optimizer."},
+            {"role": "user", "content": prompt}
         ],
-        response_format=ResumeResponse
+        max_tokens=1500,
+        temperature=0.2
     )
+    return response.choices[0].message["content"]
 
-    parsed = response.choices[0].message.parsed
-
-    if parsed is None:
-        print("[call_llm] Failed to parse structured output")
-
-        return ResumeResponse()
-
-    return parsed
-
-# =========================================================
-# FALLBACK PATH MATCHING
-# =========================================================
-
-def fallback_match(item, sentences, paths):
-    """
-    Match old_text back to original sentence list.
-    Used only if path is missing or invalid.
-    """
-
-    old_text = item.old_text.strip()
-
-    # Remove prefixes like:
-    # bullet:
-    # tools:
-    # languages:
-    old_text = re.sub(r'^\w+:\s*', '', old_text).strip()
-
-    item.old_text = old_text
-
-    if not old_text:
-        item.path = None
-        return
-
-    # -----------------------------------------------------
-    # Exact Match
-    # -----------------------------------------------------
-
-    try:
-        idx = sentences.index(old_text)
-        item.path = paths[idx]
-        return
-
-    except ValueError:
-        pass
-
-    # -----------------------------------------------------
-    # Fuzzy Match
-    # -----------------------------------------------------
-
-    best_score = 0
-    best_idx = None
-
-    for i, sentence in enumerate(sentences):
-
-        score = SequenceMatcher(
-            None,
-            old_text.lower(),
-            sentence.lower()
-        ).ratio()
-
-        if score > best_score:
-            best_score = score
-            best_idx = i
-
-    if best_idx is not None and best_score >= 0.85:
-        item.old_text = sentences[best_idx]
-        item.path = paths[best_idx]
-    else:
-        item.path = None
-
-# =========================================================
-# VALIDATE + INJECT PATHS
-# =========================================================
-
-def inject_paths(
-    parsed: ResumeResponse,
+def inject_paths_from_model(
+    validated: ResumeResponse,
     sentences: list,
     paths: list
 ) -> ResumeResponse:
     """
-    Ensure every item has a valid path.
+    Inject bullet-level paths into validated changes/suggestions.
+    Returns the same model instance with paths updated.
     """
+    def fallback_match(item, sentences, paths, item_type):
+        """Fuzzy/exact match to find path if missing/invalid."""
+        old_text = re.sub(r'^\w+:\s*', '', item.old_text.strip())
+        # Persist cleaned old_text
+        item.old_text = old_text
 
-    # =====================================================
-    # CHANGES
-    # =====================================================
+        if not old_text:
+            print(f"  [{item_type}] empty old_text – skipping path injection")
+            return
 
-    cleaned_changes = []
+        # Try exact match
+        try:
+            idx = sentences.index(old_text)
+            item.path = paths[idx]
+            return
+        except ValueError:
+            pass
 
-    for item in parsed.changes:
+        # Fuzzy fallback
+        best_score, best_idx = 0, None
+        for i, sent in enumerate(sentences):
+            score = SequenceMatcher(None, old_text.lower(), sent.lower()).ratio()
+            if score > best_score:
+                best_score, best_idx = score, i
 
-        item.old_text = re.sub(
-            r'^\w+:\s*',
-            '',
-            item.old_text.strip()
-        ).strip()
+        if best_idx is not None and best_score >= 0.85:
+            item.old_text = sentences[best_idx]  # use the exact match
+            item.path = paths[best_idx]
+            print(f"     Fuzzy match (score={best_score:.4f}) -> path '{item.path}'")
+        else:
+            item.path = None
+            print(f"     No match found (best={best_score:.4f})")
 
-        # -------------------------------------------------
-        # Invalid/missing path → fallback match
-        # -------------------------------------------------
+    # Process changes
+    for change in validated.changes:
+        path = change.path
+        if path and VALID_BULLET_PATH.match(path):
+            continue  # trust the valid path
+        # Fallback
+        print(f"  [change] Missing/invalid path – falling back to text matching")
+        fallback_match(change, sentences, paths, "change")
 
-        if (
-            not item.path or
-            not VALID_BULLET_PATH.match(item.path)
-        ):
-            fallback_match(item, sentences, paths)
+    # Process suggestions
+    for sug in validated.suggestions:
+        path = sug.path
+        if path and VALID_BULLET_PATH.match(path):
+            continue
+        print(f"  [suggestion] Missing/invalid path – falling back to text matching")
+        fallback_match(sug, sentences, paths, "suggestion")
 
-        # -------------------------------------------------
-        # Remove unchanged rewrites
-        # -------------------------------------------------
+    # Remove no‑op edits
+    validated.changes = [
+        c for c in validated.changes
+        if c.old_text.strip() != c.new_text.strip()
+    ]
+    validated.suggestions = [
+        s for s in validated.suggestions
+        if s.old_text.strip() != s.suggestion.strip()
+    ]
 
-        if item.old_text.strip() != item.new_text.strip():
-            cleaned_changes.append(item)
+    return validated
 
-    # =====================================================
-    # SUGGESTIONS
-    # =====================================================
-
-    cleaned_suggestions = []
-
-    for item in parsed.suggestions:
-
-        item.old_text = re.sub(
-            r'^\w+:\s*',
-            '',
-            item.old_text.strip()
-        ).strip()
-
-        # -------------------------------------------------
-        # Invalid/missing path → fallback match
-        # -------------------------------------------------
-
-        if (
-            not item.path or
-            not VALID_BULLET_PATH.match(item.path)
-        ):
-            fallback_match(item, sentences, paths)
-
-        # -------------------------------------------------
-        # Remove unchanged suggestions
-        # -------------------------------------------------
-
-        if item.old_text.strip() != item.suggestion.strip():
-            cleaned_suggestions.append(item)
-
-    parsed.changes = cleaned_changes
-    parsed.suggestions = cleaned_suggestions
-
-    return parsed
-
-# =========================================================
-# MAIN GENERATION FUNCTION
-# =========================================================
 
 def generate_response(
     sentences: list,
@@ -231,30 +129,18 @@ def generate_response(
     job_context: str = ""
 ) -> dict:
     """
-    Build prompt, call OpenAI, validate paths,
-    and return structured response.
+    Build prompt, call LLM, validate with Pydantic, inject paths.
+    Returns a dict with mode, changes, suggestions for compatibility.
     """
-
-    # =====================================================
-    # Build numbered resume items
-    # =====================================================
-
+    # Build numbered list
     numbered_lines = [
         f"{i+1}. [path: {paths[i]}] {sentences[i]}"
         for i in range(len(sentences))
     ]
-
     numbered_items = "\n".join(numbered_lines)
 
-    # =====================================================
     # Build prompt
-    # =====================================================
-
-    mode_desc = MODE_DESCRIPTIONS.get(
-        mode,
-        "critique"
-    )
-
+    mode_desc = MODE_DESCRIPTIONS.get(mode, "critique")
     prompt = build_resume_prompt(
         numbered_items=numbered_items,
         mode=mode,
@@ -263,35 +149,23 @@ def generate_response(
         sections_available=sections_available
     )
 
-    # =====================================================
-    # Call OpenAI
-    # =====================================================
+    # Call LLM
+    raw_output = call_llm(prompt)
 
-    parsed = call_llm(prompt)
+    # Validate JSON with Pydantic
+    try:
+        parsed_json = json.loads(raw_output)
+        validated = ResumeResponse.model_validate(parsed_json)
+    except (json.JSONDecodeError, ValidationError) as e:
+        print(f"Validation error: {e}")
+        return {"mode": "error", "changes": [], "suggestions": []}
 
-    print("\n============= OPENAI RESPONSE =============")
-    print(parsed.model_dump_json(indent=2)[:1000])
+    # Inject paths using the original sentences/paths
+    validated = inject_paths_from_model(validated, sentences, paths)
 
-    # =====================================================
-    # Inject/fix paths
-    # =====================================================
-
-    parsed = inject_paths(
-        parsed,
-        sentences,
-        paths
-    )
-
+    # Return dict (or you could return the Pydantic model directly)
     return {
         "mode": mode,
-        "summary": "",
-        "changes": [
-            c.model_dump()
-            for c in parsed.changes
-        ],
-        "suggestions": [
-            s.model_dump()
-            for s in parsed.suggestions
-        ],
-        "meta": {}
+        "changes": [c.dict() for c in validated.changes],
+        "suggestions": [s.dict() for s in validated.suggestions],
     }

@@ -37,6 +37,7 @@ http://localhost:8000
 ```
 
 ---
+# Update .env.example to .env to run application
 
 # Backend Architecture
 
